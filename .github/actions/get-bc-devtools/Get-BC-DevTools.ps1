@@ -290,10 +290,10 @@ try {
         $assemblyInfo = Get-AssetInfo -Source $source
 
         $newEntry = [PSCustomObject]@{
-            Version         = $assemblyInfo.Version
-            PackageType     = $source.PackageType
-            PackageVersion  = $source.PackageVersion
-            TargetFramework = $assemblyInfo.TargetFramework
+            version         = $assemblyInfo.Version
+            packageType     = $source.PackageType
+            packageVersion  = $source.PackageVersion
+            targetFramework = $assemblyInfo.TargetFramework
         }
        
         $newResults += $newEntry
