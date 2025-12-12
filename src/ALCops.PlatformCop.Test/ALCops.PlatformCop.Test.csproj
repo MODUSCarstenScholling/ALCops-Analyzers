@@ -41,7 +41,7 @@
     <!-- Direct project references when not in CI -->
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
         <ProjectReference Include="../ALCops.Common/ALCops.Common.csproj" />
-        <ProjectReference Include="../ALCops.ApplicationCop/ALCops.ApplicationCop.csproj" />
+        <ProjectReference Include="../ALCops.PlatformCop/ALCops.PlatformCop.csproj" />
     </ItemGroup>
 
     <!-- Binary dependencies; definition driven by NavBinaryTfm and Configuration -->
@@ -50,8 +50,8 @@
             <HintPath>../ALCops.Common/bin/$(Configuration)/$(NavBinaryTfm)/ALCops.Common.dll</HintPath>
             <Private>True</Private>
         </Reference>
-        <Reference Include="ALCop.ApplicationCop">
-            <HintPath>../ALCops.ApplicationCop/bin/$(Configuration)/$(NavBinaryTfm)/ALCops.ApplicationCop.dll</HintPath>
+        <Reference Include="ALCop.PlatformCop">
+            <HintPath>../ALCops.PlatformCop/bin/$(Configuration)/$(NavBinaryTfm)/ALCops.PlatformCop.dll</HintPath>
             <Private>True</Private>
         </Reference>
     </ItemGroup>
