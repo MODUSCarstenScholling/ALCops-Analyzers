@@ -7,7 +7,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace ALCops.ApplicationCop {
+namespace ALCops.PlatformCop {
     using System;
     
     
@@ -19,14 +19,14 @@ namespace ALCops.ApplicationCop {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("Microsoft.Build.Tasks.StronglyTypedResourceBuilder", "15.1.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    internal class ApplicationCopAnalyzers {
+    internal class PlatformCopAnalyzers {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
         private static global::System.Globalization.CultureInfo resourceCulture;
         
         [global::System.Diagnostics.CodeAnalysis.SuppressMessageAttribute("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode")]
-        internal ApplicationCopAnalyzers() {
+        internal PlatformCopAnalyzers() {
         }
         
         /// <summary>
@@ -36,7 +36,7 @@ namespace ALCops.ApplicationCop {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("ALCops.ApplicationCop.ApplicationCopAnalyzers", typeof(ApplicationCopAnalyzers).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("ALCops.PlatformCop.PlatformCopAnalyzers", typeof(PlatformCopAnalyzers).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -58,29 +58,38 @@ namespace ALCops.ApplicationCop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to lowFields are calculated fields and should not allow direct user input. By default, the Editable property must be set to false. If the property is missing or set to true, this diagnostic is raised. In rare cases where a FlowField needs to be editable, you should explicitly set Editable = true and document the reason with a comment. Alternatively, use pragma directives (#pragma warning disable/restore) to suppress the diagnostic, always with a justification for the deviation..
+        ///   Looks up a localized string similar to Set Editable property to false.
         /// </summary>
-        internal static string FlowFieldsShouldNotBeEditableDescription {
+        internal static string EditableFlowFieldCodeAction {
             get {
-                return ResourceManager.GetString("FlowFieldsShouldNotBeEditableDescription", resourceCulture);
+                return ResourceManager.GetString("EditableFlowFieldCodeAction", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to FlowFields must have the Editable property set to false. If you require it to be true, set it explicitly and add a comment justifying the exception..
+        ///   Looks up a localized string similar to FlowFields are calculated fields whose values are derived from other data and are not stored on the record itself. Allowing a FlowField to be editable exposes an input surface that the platform does not process by default. User-entered values are neither validated nor persisted unless custom logic is explicitly implemented..
         /// </summary>
-        internal static string FlowFieldsShouldNotBeEditableFormat {
+        internal static string EditableFlowFieldDescription {
             get {
-                return ResourceManager.GetString("FlowFieldsShouldNotBeEditableFormat", resourceCulture);
+                return ResourceManager.GetString("EditableFlowFieldDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Field &apos;{0}&apos; is editable, which is uncommon for a FlowField. Set Editable = false, or add a comment to justify why editing is intentional..
+        /// </summary>
+        internal static string EditableFlowFieldFormat {
+            get {
+                return ResourceManager.GetString("EditableFlowFieldFormat", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to FlowFields should not be editable.
         /// </summary>
-        internal static string FlowFieldsShouldNotBeEditableTitle {
+        internal static string EditableFlowFieldTitle {
             get {
-                return ResourceManager.GetString("FlowFieldsShouldNotBeEditableTitle", resourceCulture);
+                return ResourceManager.GetString("EditableFlowFieldTitle", resourceCulture);
             }
         }
     }

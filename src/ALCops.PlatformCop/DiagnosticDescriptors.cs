@@ -1,23 +1,23 @@
 using System.Globalization;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Diagnostics;
 
-namespace ALCops.ApplicationCop;
+namespace ALCops.PlatformCop;
 
 public static class DiagnosticDescriptors
 {
-    public static readonly DiagnosticDescriptor FlowFieldsShouldNotBeEditable = new(
-        id: DiagnosticIds.FlowFieldsShouldNotBeEditable,
-        title: ApplicationCopAnalyzers.FlowFieldsShouldNotBeEditableTitle,
-        messageFormat: ApplicationCopAnalyzers.FlowFieldsShouldNotBeEditableFormat,
+    public static readonly DiagnosticDescriptor EditableFlowField = new(
+        id: DiagnosticIds.EditableFlowField,
+        title: PlatformCopAnalyzers.EditableFlowFieldTitle,
+        messageFormat: PlatformCopAnalyzers.EditableFlowFieldFormat,
         category: Category.Design,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: ApplicationCopAnalyzers.FlowFieldsShouldNotBeEditableDescription,
-        helpLinkUri: DiagnosticIds.FlowFieldsShouldNotBeEditable);
+        description: PlatformCopAnalyzers.EditableFlowFieldDescription,
+        helpLinkUri: GetHelpUri(DiagnosticIds.EditableFlowField));
 
     public static string GetHelpUri(string identifier)
     {
-        return string.Format(CultureInfo.InvariantCulture, "https:/someUrl/{0}.md", identifier);
+        return string.Format(CultureInfo.InvariantCulture, "https://alcops.dev/docs/analyzers/platformcop/{0}/", identifier.ToLower());
     }
 
     /// <summary>

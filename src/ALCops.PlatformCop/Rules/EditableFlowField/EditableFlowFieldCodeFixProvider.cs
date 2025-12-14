@@ -8,16 +8,16 @@ using Microsoft.Dynamics.Nav.CodeAnalysis.CodeFixes;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Syntax;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Workspaces;
 
-namespace ALCops.ApplicationCop.CodeFixer;
+namespace ALCops.PlatformCop.CodeFixer;
 
-[CodeFixProvider(nameof(FlowFieldsShouldNotBeEditableCodeFixProvider))]
-public sealed class FlowFieldsShouldNotBeEditableCodeFixProvider : CodeFixProvider
+[CodeFixProvider(nameof(EditableFlowFieldCodeFixProvider))]
+public sealed class EditableFlowFieldCodeFixProvider : CodeFixProvider
 {
-    private class FlowFieldsShouldNotBeEditableCodeAction : CodeAction.DocumentChangeAction
+    private class EditableFlowFieldCodeAction : CodeAction.DocumentChangeAction
     {
         public override CodeActionKind Kind => CodeActionKind.QuickFix;
 
-        public FlowFieldsShouldNotBeEditableCodeAction(string title,
+        public EditableFlowFieldCodeAction(string title,
             Func<CancellationToken, Task<Document>> createChangedDocument, string equivalenceKey, bool generateFixAll)
             : base(title, createChangedDocument, equivalenceKey)
         {
@@ -46,7 +46,7 @@ public sealed class FlowFieldsShouldNotBeEditableCodeFixProvider : CodeFixProvid
     }
 
     public sealed override ImmutableArray<string> FixableDiagnosticIds =>
-        ImmutableArray.Create(DiagnosticDescriptors.FlowFieldsShouldNotBeEditable.Id);
+        ImmutableArray.Create(DiagnosticDescriptors.EditableFlowField.Id);
 
     public sealed override FixAllProvider GetFixAllProvider() =>
          WellKnownFixAllProviders.BatchFixer;
@@ -67,13 +67,13 @@ public sealed class FlowFieldsShouldNotBeEditableCodeFixProvider : CodeFixProvid
         ctx.RegisterCodeFix(CreateCodeAction(node, document, true), ctx.Diagnostics[0]);
     }
 
-    private static FlowFieldsShouldNotBeEditableCodeAction CreateCodeAction(SyntaxNode node, Document document,
+    private static EditableFlowFieldCodeAction CreateCodeAction(SyntaxNode node, Document document,
         bool generateFixAll)
     {
-        return new FlowFieldsShouldNotBeEditableCodeAction(
-            "LinterCopAnalyzers.Fix0001FlowFieldsShouldNotBeEditableCodeAction",
+        return new EditableFlowFieldCodeAction(
+            PlatformCopAnalyzers.EditableFlowFieldCodeAction,
             ct => SetEditablePropertyForField(document, node, ct),
-            nameof(FlowFieldsShouldNotBeEditableCodeFixProvider),
+            nameof(EditableFlowFieldCodeFixProvider),
             generateFixAll);
     }
 

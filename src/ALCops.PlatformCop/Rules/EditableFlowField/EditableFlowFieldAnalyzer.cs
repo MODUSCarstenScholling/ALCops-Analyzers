@@ -5,13 +5,13 @@ using Microsoft.Dynamics.Nav.CodeAnalysis;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Diagnostics;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Syntax;
 
-namespace ALCops.ApplicationCop.Analyzer;
+namespace ALCops.PlatformCop.Analyzer;
 
 [DiagnosticAnalyzer]
-public class FlowFieldsShouldNotBeEditable : DiagnosticAnalyzer
+public class EditableFlowFieldAnalyzer : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
-        ImmutableArray.Create(DiagnosticDescriptors.FlowFieldsShouldNotBeEditable);
+        ImmutableArray.Create(DiagnosticDescriptors.EditableFlowField);
 
     public override void Initialize(AnalysisContext context) =>
         context.RegisterSymbolAction(new Action<SymbolAnalysisContext>(this.AnalyzeFlowFieldEditable), EnumProvider.SymbolKind.Field);
@@ -45,7 +45,7 @@ public class FlowFieldsShouldNotBeEditable : DiagnosticAnalyzer
 
         ctx.ReportDiagnostic(
             Diagnostic.Create(
-                DiagnosticDescriptors.FlowFieldsShouldNotBeEditable,
+                DiagnosticDescriptors.EditableFlowField,
                 field.GetLocation()));
     }
 

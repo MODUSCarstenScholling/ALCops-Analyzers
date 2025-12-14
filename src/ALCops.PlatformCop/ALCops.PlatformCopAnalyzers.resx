@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <root>
   <!--
     Microsoft ResX Schema
@@ -117,16 +117,20 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="FlowFieldsShouldNotBeEditableTitle" xml:space="preserve">
+  <data name="EditableFlowFieldTitle" xml:space="preserve">
     <value>FlowFields should not be editable</value>
     <comment/>
   </data>
-  <data name="FlowFieldsShouldNotBeEditableFormat" xml:space="preserve">
-    <value>FlowFields must have the Editable property set to false. If you require it to be true, set it explicitly and add a comment justifying the exception.</value>
+  <data name="EditableFlowFieldFormat" xml:space="preserve">
+    <value>Field '{0}' is editable, which is uncommon for a FlowField. Set Editable = false, or add a comment to justify why editing is intentional.</value>
     <comment/>
   </data>
-  <data name="FlowFieldsShouldNotBeEditableDescription" xml:space="preserve">
-    <value>lowFields are calculated fields and should not allow direct user input. By default, the Editable property must be set to false. If the property is missing or set to true, this diagnostic is raised. In rare cases where a FlowField needs to be editable, you should explicitly set Editable = true and document the reason with a comment. Alternatively, use pragma directives (#pragma warning disable/restore) to suppress the diagnostic, always with a justification for the deviation.</value>
+  <data name="EditableFlowFieldDescription" xml:space="preserve">
+    <value>FlowFields are calculated fields whose values are derived from other data and are not stored on the record itself. Allowing a FlowField to be editable exposes an input surface that the platform does not process by default. User-entered values are neither validated nor persisted unless custom logic is explicitly implemented.</value>
+    <comment/>
+  </data>
+  <data name="EditableFlowFieldCodeAction" xml:space="preserve">
+    <value>Set Editable property to false</value>
     <comment/>
   </data>
 </root>

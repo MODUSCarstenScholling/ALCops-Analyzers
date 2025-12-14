@@ -1,24 +1,25 @@
-using ALCops.ApplicationCop.CodeFixer;
+using ALCops.PlatformCop.Analyzer;
+using ALCops.PlatformCop.CodeFixer;
 using RoslynTestKit;
 
-namespace ALCops.ApplicationCop.Test
+namespace ALCops.PlatformCop.Test
 {
 
-    public class FlowFieldsShouldNotBeEditable : NavCodeAnalysisBase
+    public class EditableFlowField : NavCodeAnalysisBase
     {
         private AnalyzerTestFixture _fixture;
-        private static readonly Analyzer.FlowFieldsShouldNotBeEditable _analyzer = new();
+        private static readonly EditableFlowFieldAnalyzer _analyzer = new();
         private string _testCasePath;
 
         [SetUp]
         public void Setup()
         {
-            _fixture = RoslynFixtureFactory.Create<Analyzer.FlowFieldsShouldNotBeEditable>();
+            _fixture = RoslynFixtureFactory.Create<EditableFlowFieldAnalyzer>();
 
             _testCasePath = Path.Combine(
                 Directory.GetParent(
                     Environment.CurrentDirectory)!.Parent!.Parent!.FullName,
-                    Path.Combine("Rules", nameof(FlowFieldsShouldNotBeEditable)));
+                    Path.Combine("Rules", nameof(EditableFlowField)));
         }
 
         [Test]
@@ -29,7 +30,7 @@ namespace ALCops.ApplicationCop.Test
             var code = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(HasDiagnostic), $"{testCase}.al"))
                 .ConfigureAwait(false);
 
-            _fixture.HasDiagnosticAtAllMarkers(code, DiagnosticIds.FlowFieldsShouldNotBeEditable);
+            _fixture.HasDiagnosticAtAllMarkers(code, DiagnosticIds.EditableFlowField);
         }
 
         [Test]
@@ -53,7 +54,7 @@ namespace ALCops.ApplicationCop.Test
             var code = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(NoDiagnostic), $"{testCase}.al"))
                 .ConfigureAwait(false);
 
-            _fixture.NoDiagnosticAtAllMarkers(code, DiagnosticIds.FlowFieldsShouldNotBeEditable);
+            _fixture.NoDiagnosticAtAllMarkers(code, DiagnosticIds.EditableFlowField);
         }
 
         [Test]
@@ -66,13 +67,13 @@ namespace ALCops.ApplicationCop.Test
             var expectedCode = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(HasFix), testCase, "expected.al"))
                 .ConfigureAwait(false);
 
-            var fixture = RoslynFixtureFactory.Create<FlowFieldsShouldNotBeEditableCodeFixProvider>(
+            var fixture = RoslynFixtureFactory.Create<EditableFlowFieldCodeFixProvider>(
                 new CodeFixTestFixtureConfig
                 {
                     AdditionalAnalyzers = [_analyzer]
                 });
 
-            fixture.TestCodeFix(currentCode, expectedCode, DiagnosticDescriptors.FlowFieldsShouldNotBeEditable);
+            fixture.TestCodeFix(currentCode, expectedCode, DiagnosticDescriptors.EditableFlowField);
         }
     }
 }
