@@ -58,7 +58,7 @@ namespace ALCops.DocumentationCop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Commit() needs a comment to justify its existence. Either a leading or a trailing comment..
+        ///   Looks up a localized string similar to Calling Commit() manually interrupts the default transactional behavior of Business Central by persisting changes earlier than the platform would normally allow. Although there are valid use cases, the reason cannot be inferred from the code itself. A leading or trailing comment is required to document why the commit is necessary..
         /// </summary>
         internal static string CommitRequiresCommentDescription {
             get {
@@ -67,7 +67,7 @@ namespace ALCops.DocumentationCop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Commit() needs a comment to justify its existence. Either a leading or a trailing comment..
+        ///   Looks up a localized string similar to Commit() needs a comment to justify its existence. Add a leading or trailing comment explaining why it is required..
         /// </summary>
         internal static string CommitRequiresCommentFormat {
             get {
@@ -76,7 +76,7 @@ namespace ALCops.DocumentationCop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Commit() needs a comment to justify its existence. Either a leading or a trailing comment..
+        ///   Looks up a localized string similar to Commit() needs a comment to justify its existence.
         /// </summary>
         internal static string CommitRequiresCommentTitle {
             get {

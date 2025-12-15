@@ -93,6 +93,16 @@ public static class EnumProvider
         public static NavCodeAnalysis.MethodKind BuiltInMethod => _builtInMethod.Value;
     }
 
+    /// <summary>
+    /// OperationKind enum values
+    /// </summary>
+    public static class OperationKind
+    {
+        private static readonly Lazy<NavCodeAnalysis.OperationKind> _invocationExpression =
+            new(() => ParseEnum<NavCodeAnalysis.OperationKind>(nameof(NavCodeAnalysis.OperationKind.InvocationExpression)));
+
+        public static NavCodeAnalysis.OperationKind InvocationExpression => _invocationExpression.Value;
+    }
 
     /// <summary>
     /// PageTypeKind enum values
