@@ -83,6 +83,18 @@ public static class EnumProvider
     }
 
     /// <summary>
+    /// MethodKind enum values
+    /// </summary>
+    public static class MethodKind
+    {
+        private static readonly Lazy<NavCodeAnalysis.MethodKind> _builtInMethod =
+            new(() => ParseEnum<NavCodeAnalysis.MethodKind>(nameof(NavCodeAnalysis.MethodKind.BuiltInMethod)));
+
+        public static NavCodeAnalysis.MethodKind BuiltInMethod => _builtInMethod.Value;
+    }
+
+
+    /// <summary>
     /// PageTypeKind enum values
     /// </summary>
     public static class PageTypeKind
