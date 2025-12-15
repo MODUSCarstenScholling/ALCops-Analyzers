@@ -80,12 +80,6 @@ jobs:
       - name: Build ALCops.Common
         run: dotnet build ./src/ALCops.Common/ALCops.Common.csproj --configuration Release --no-restore
 
-      - name: Upload ALCops.Common artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ALCops.Common
-          path: ./src/ALCops.Common/bin/Release/
-
       # ALCops.ApplicationCop
       - name: Restore ALCops.ApplicationCop
         run: dotnet restore ./src/ALCops.ApplicationCop/ALCops.ApplicationCop.csproj
@@ -187,12 +181,6 @@ jobs:
           sources: ${{ needs.setup.outputs.bc-devtools-sources }}
           version-number: ${{ matrix.version }}
           target-path: Microsoft.Dynamics.BusinessCentral.Development.Tools/net8.0 # Always use net8.0 target folder for testing
-
-      - name: Download ALCops.Common biniaries
-        uses: actions/download-artifact@v4
-        with:
-          name: ALCops.Common
-          path: ./src/ALCops.Common/bin/Release/
 
       # ALCops.ApplicationCop
       - name: Download ALCops.ApplicationCop biniaries
