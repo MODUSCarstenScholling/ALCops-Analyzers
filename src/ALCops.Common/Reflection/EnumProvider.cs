@@ -83,6 +83,28 @@ public static class EnumProvider
     }
 
     /// <summary>
+    /// MethodKind enum values
+    /// </summary>
+    public static class MethodKind
+    {
+        private static readonly Lazy<NavCodeAnalysis.MethodKind> _builtInMethod =
+            new(() => ParseEnum<NavCodeAnalysis.MethodKind>(nameof(NavCodeAnalysis.MethodKind.BuiltInMethod)));
+
+        public static NavCodeAnalysis.MethodKind BuiltInMethod => _builtInMethod.Value;
+    }
+
+    /// <summary>
+    /// OperationKind enum values
+    /// </summary>
+    public static class OperationKind
+    {
+        private static readonly Lazy<NavCodeAnalysis.OperationKind> _invocationExpression =
+            new(() => ParseEnum<NavCodeAnalysis.OperationKind>(nameof(NavCodeAnalysis.OperationKind.InvocationExpression)));
+
+        public static NavCodeAnalysis.OperationKind InvocationExpression => _invocationExpression.Value;
+    }
+
+    /// <summary>
     /// PageTypeKind enum values
     /// </summary>
     public static class PageTypeKind
