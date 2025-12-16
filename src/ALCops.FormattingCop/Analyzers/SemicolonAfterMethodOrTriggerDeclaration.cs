@@ -4,7 +4,7 @@ using ALCops.Common.Reflection;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Diagnostics;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Syntax;
 
-namespace ALCops.FormattingCop.Analyzer;
+namespace ALCops.FormattingCop.Analyzers;
 
 [DiagnosticAnalyzer]
 public class SemicolonAfterMethodOrTriggerDeclaration : DiagnosticAnalyzer

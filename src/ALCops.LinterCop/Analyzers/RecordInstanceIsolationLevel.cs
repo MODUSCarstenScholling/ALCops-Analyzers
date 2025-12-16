@@ -4,7 +4,7 @@ using ALCops.Common.Reflection;
 using Microsoft.Dynamics.Nav.CodeAnalysis;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Diagnostics;
 
-namespace ALCops.LinterCop.Analyzer;
+namespace ALCops.LinterCop.Analyzers;
 
 [DiagnosticAnalyzer]
 public class RecordInstanceIsolationLevel : DiagnosticAnalyzer

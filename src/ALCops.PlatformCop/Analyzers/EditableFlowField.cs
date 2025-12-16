@@ -5,10 +5,10 @@ using Microsoft.Dynamics.Nav.CodeAnalysis;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Diagnostics;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Syntax;
 
-namespace ALCops.PlatformCop.Analyzer;
+namespace ALCops.PlatformCop.Analyzers;
 
 [DiagnosticAnalyzer]
-public class EditableFlowFieldAnalyzer : DiagnosticAnalyzer
+public class EditableFlowField : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
         ImmutableArray.Create(DiagnosticDescriptors.EditableFlowField);

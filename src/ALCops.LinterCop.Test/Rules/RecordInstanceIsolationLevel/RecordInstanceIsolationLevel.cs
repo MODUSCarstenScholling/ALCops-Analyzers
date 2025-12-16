@@ -1,4 +1,4 @@
-using ALCops.LinterCop.CodeFixer;
+using ALCops.LinterCop.CodeFixes;
 using RoslynTestKit;
 
 namespace ALCops.LinterCop.Test
@@ -6,13 +6,13 @@ namespace ALCops.LinterCop.Test
     public class RecordInstanceIsolationLevel : NavCodeAnalysisBase
     {
         private AnalyzerTestFixture _fixture;
-        private static readonly Analyzer.RecordInstanceIsolationLevel _analyzer = new();
+        private static readonly Analyzers.RecordInstanceIsolationLevel _analyzer = new();
         private string _testCasePath;
 
         [SetUp]
         public void Setup()
         {
-            _fixture = RoslynFixtureFactory.Create<Analyzer.RecordInstanceIsolationLevel>();
+            _fixture = RoslynFixtureFactory.Create<Analyzers.RecordInstanceIsolationLevel>();
 
             _testCasePath = Path.Combine(
                 Directory.GetParent(

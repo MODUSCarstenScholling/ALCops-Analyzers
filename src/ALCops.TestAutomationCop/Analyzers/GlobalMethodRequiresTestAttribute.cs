@@ -4,10 +4,10 @@ using Microsoft.Dynamics.Nav.CodeAnalysis;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Diagnostics;
 using Microsoft.Dynamics.Nav.CodeAnalysis.InternalSyntax;
 
-namespace ALCops.TestAutomationCop.Analyzer;
+namespace ALCops.TestAutomationCop.Analyzers;
 
 [DiagnosticAnalyzer]
-public class GlobalMethodRequiresTestAttributeAnalyzer : DiagnosticAnalyzer
+public class GlobalMethodRequiresTestAttribute : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
         ImmutableArray.Create(

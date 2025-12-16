@@ -4,10 +4,10 @@ using ALCops.Common.Reflection;
 using Microsoft.Dynamics.Nav.CodeAnalysis;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Diagnostics;
 
-namespace ALCops.ApplicationCop.Analyzer;
+namespace ALCops.ApplicationCop.Analyzers;
 
 [DiagnosticAnalyzer]
-public class LookupPageIdAndDrillDownPageIdAnalyzer : DiagnosticAnalyzer
+public class LookupPageIdAndDrillDownPageId : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
         ImmutableArray.Create(

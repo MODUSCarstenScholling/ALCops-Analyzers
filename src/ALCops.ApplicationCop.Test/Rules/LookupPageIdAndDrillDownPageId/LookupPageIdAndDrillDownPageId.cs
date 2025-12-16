@@ -1,4 +1,3 @@
-using ALCops.ApplicationCop.Analyzer;
 using RoslynTestKit;
 
 namespace ALCops.ApplicationCop.Test
@@ -11,7 +10,7 @@ namespace ALCops.ApplicationCop.Test
         [SetUp]
         public void Setup()
         {
-            _fixture = RoslynFixtureFactory.Create<LookupPageIdAndDrillDownPageIdAnalyzer>();
+            _fixture = RoslynFixtureFactory.Create<Analyzers.LookupPageIdAndDrillDownPageId>();
 
             _testCasePath = Path.Combine(
                 Directory.GetParent(

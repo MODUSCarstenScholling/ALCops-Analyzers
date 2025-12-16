@@ -10,7 +10,7 @@ namespace ALCops.TestAutomationCop.Test
         [SetUp]
         public void Setup()
         {
-            _fixture = RoslynFixtureFactory.Create<Analyzer.GlobalMethodRequiresTestAttributeAnalyzer>();
+            _fixture = RoslynFixtureFactory.Create<Analyzers.GlobalMethodRequiresTestAttribute>();
 
             _testCasePath = Path.Combine(
                 Directory.GetParent(

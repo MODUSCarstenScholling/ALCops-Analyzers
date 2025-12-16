@@ -7,7 +7,7 @@ using Microsoft.Dynamics.Nav.CodeAnalysis.CodeFixes;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Syntax;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Workspaces;
 
-namespace ALCops.LinterCop.CodeFixer;
+namespace ALCops.LinterCop.CodeFixes;
 
 [CodeFixProvider(nameof(RecordInstanceIsolationLevelCodeFixProvider))]
 public sealed class RecordInstanceIsolationLevelCodeFixProvider : CodeFixProvider

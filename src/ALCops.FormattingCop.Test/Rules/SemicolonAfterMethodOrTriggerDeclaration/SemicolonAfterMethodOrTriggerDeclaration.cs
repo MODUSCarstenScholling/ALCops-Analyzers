@@ -10,7 +10,7 @@ namespace ALCops.FormattingCop.Test
         [SetUp]
         public void Setup()
         {
-            _fixture = RoslynFixtureFactory.Create<Analyzer.SemicolonAfterMethodOrTriggerDeclaration>();
+            _fixture = RoslynFixtureFactory.Create<Analyzers.SemicolonAfterMethodOrTriggerDeclaration>();
 
             _testCasePath = Path.Combine(
                 Directory.GetParent(

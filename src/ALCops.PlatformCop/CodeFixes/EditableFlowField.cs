@@ -8,10 +8,10 @@ using Microsoft.Dynamics.Nav.CodeAnalysis.CodeFixes;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Syntax;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Workspaces;
 
-namespace ALCops.PlatformCop.CodeFixer;
+namespace ALCops.PlatformCop.CodeFixes;
 
-[CodeFixProvider(nameof(EditableFlowFieldCodeFixProvider))]
-public sealed class EditableFlowFieldCodeFixProvider : CodeFixProvider
+[CodeFixProvider(nameof(EditableFlowFieldCodeFix))]
+public sealed class EditableFlowFieldCodeFix : CodeFixProvider
 {
     private class EditableFlowFieldCodeAction : CodeAction.DocumentChangeAction
     {
@@ -21,27 +21,9 @@ public sealed class EditableFlowFieldCodeFixProvider : CodeFixProvider
             Func<CancellationToken, Task<Document>> createChangedDocument, string equivalenceKey, bool generateFixAll)
             : base(title, createChangedDocument, equivalenceKey)
         {
-            // Use reflection to safely set properties that may not exist in all versions of the API
-            SetPropertyIfExists("SupportsFixAll", generateFixAll);
-            SetPropertyIfExists("FixAllSingleInstanceTitle", string.Empty);
-            SetPropertyIfExists("FixAllTitle", Title);
-        }
-
-        private void SetPropertyIfExists(string propertyName, object value)
-        {
-            try
-            {
-                var propertyInfo = GetType().BaseType?.GetProperty(propertyName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                if (propertyInfo != null && propertyInfo.CanWrite)
-                {
-                    propertyInfo.SetValue(this, value);
-                }
-            }
-            catch (Exception)
-            {
-                // Silently ignore if property doesn't exist or can't be set
-                // This maintains compatibility across different API versions
-            }
+            this.SetPropertyIfExists("SupportsFixAll", generateFixAll);
+            this.SetPropertyIfExists("FixAllSingleInstanceTitle", string.Empty);
+            this.SetPropertyIfExists("FixAllTitle", Title);
         }
     }
 
@@ -73,7 +55,7 @@ public sealed class EditableFlowFieldCodeFixProvider : CodeFixProvider
         return new EditableFlowFieldCodeAction(
             PlatformCopAnalyzers.EditableFlowFieldCodeAction,
             ct => SetEditablePropertyForField(document, node, ct),
-            nameof(EditableFlowFieldCodeFixProvider),
+            nameof(EditableFlowFieldCodeFix),
             generateFixAll);
     }
 

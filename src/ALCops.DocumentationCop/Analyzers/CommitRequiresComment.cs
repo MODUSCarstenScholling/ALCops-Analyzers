@@ -5,10 +5,10 @@ using Microsoft.Dynamics.Nav.CodeAnalysis;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Diagnostics;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Syntax;
 
-namespace ALCops.DocumentationCop.Analyzer;
+namespace ALCops.DocumentationCop.Analyzers;
 
 [DiagnosticAnalyzer]
-public class CommitRequiresCommentAnalyzer : DiagnosticAnalyzer
+public class CommitRequiresComment : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
         ImmutableArray.Create(DiagnosticDescriptors.CommitRequiresCommen);

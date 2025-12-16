@@ -1,5 +1,4 @@
-using ALCops.PlatformCop.Analyzer;
-using ALCops.PlatformCop.CodeFixer;
+using ALCops.PlatformCop.CodeFixes;
 using RoslynTestKit;
 
 namespace ALCops.PlatformCop.Test
@@ -7,13 +6,13 @@ namespace ALCops.PlatformCop.Test
     public class EditableFlowField : NavCodeAnalysisBase
     {
         private AnalyzerTestFixture _fixture;
-        private static readonly EditableFlowFieldAnalyzer _analyzer = new();
+        private static readonly Analyzers.EditableFlowField _analyzer = new();
         private string _testCasePath;
 
         [SetUp]
         public void Setup()
         {
-            _fixture = RoslynFixtureFactory.Create<EditableFlowFieldAnalyzer>();
+            _fixture = RoslynFixtureFactory.Create<Analyzers.EditableFlowField>();
 
             _testCasePath = Path.Combine(
                 Directory.GetParent(
@@ -66,7 +65,7 @@ namespace ALCops.PlatformCop.Test
             var expectedCode = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(HasFix), testCase, "expected.al"))
                 .ConfigureAwait(false);
 
-            var fixture = RoslynFixtureFactory.Create<EditableFlowFieldCodeFixProvider>(
+            var fixture = RoslynFixtureFactory.Create<EditableFlowFieldCodeFix>(
                 new CodeFixTestFixtureConfig
                 {
                     AdditionalAnalyzers = [_analyzer]

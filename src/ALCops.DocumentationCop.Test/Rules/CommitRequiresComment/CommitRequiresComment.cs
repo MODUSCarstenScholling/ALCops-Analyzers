@@ -1,4 +1,3 @@
-using ALCops.DocumentationCop.Analyzer;
 using RoslynTestKit;
 
 namespace ALCops.DocumentationCop.Test
@@ -11,7 +10,7 @@ namespace ALCops.DocumentationCop.Test
         [SetUp]
         public void Setup()
         {
-            _fixture = RoslynFixtureFactory.Create<CommitRequiresCommentAnalyzer>();
+            _fixture = RoslynFixtureFactory.Create<Analyzers.CommitRequiresComment>();
 
             _testCasePath = Path.Combine(
                 Directory.GetParent(
