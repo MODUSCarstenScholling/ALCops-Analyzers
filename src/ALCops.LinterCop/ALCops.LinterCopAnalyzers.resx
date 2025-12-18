@@ -150,7 +150,7 @@
     <comment/>
   </data>
   <data name="RecordInstanceIsolationLevelCodeActionTitle" xml:space="preserve">
-    <value>Replace LockTable() with ReadIsolation</value>
+    <value>ALCops: Replace LockTable() with ReadIsolation</value>
     <comment/>
   </data>
 </root>
