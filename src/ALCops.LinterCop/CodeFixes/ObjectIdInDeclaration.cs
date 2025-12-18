@@ -114,13 +114,11 @@ public sealed class ObjectIdInDeclarationCodeFixProvider : CodeFixProvider
 
     private static async Task<Document> ReplaceObjectIdWithObjectName(Document document, SyntaxNode node, CodeFixProperties properties, CancellationToken cancellationToken)
     {
-        var syntaxRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
         if (node is not ObjectNameOrIdSyntax objectNameOrIdSyntax)
             return document;
 
         var newObjectNameOrIdSyntax = SyntaxFactory.ObjectNameOrId(CreateIdentifierName(properties));
-        var newRoot = syntaxRoot.ReplaceNode(objectNameOrIdSyntax, newObjectNameOrIdSyntax);
+        var newRoot = (await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false)).ReplaceNode(objectNameOrIdSyntax, newObjectNameOrIdSyntax);
         return document.WithSyntaxRoot(newRoot);
     }
 

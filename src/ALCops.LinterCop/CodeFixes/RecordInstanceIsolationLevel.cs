@@ -63,8 +63,6 @@ public sealed class RecordInstanceIsolationLevelCodeFixProvider : CodeFixProvide
 
     private static async Task<Document> ReplaceLockTableWithReadIsolation(Document document, SyntaxNode node, CancellationToken cancellationToken)
     {
-        var syntaxRoot = await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false);
-
         if (node is not InvocationExpressionSyntax invocationExpression)
             return document;
 
@@ -86,7 +84,7 @@ public sealed class RecordInstanceIsolationLevelCodeFixProvider : CodeFixProvide
 
         var newInvocation = SyntaxFactory.InvocationExpression(newMemberAccess, argumentList);
 
-        var newRoot = syntaxRoot.ReplaceNode(invocationExpression, newInvocation);
+        var newRoot = (await document.GetSyntaxRootAsync(cancellationToken).ConfigureAwait(false)).ReplaceNode(invocationExpression, newInvocation);
         return document.WithSyntaxRoot(newRoot);
     }
 }
