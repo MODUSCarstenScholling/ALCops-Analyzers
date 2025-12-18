@@ -117,6 +117,26 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="ObjectIdInDeclarationTitle" xml:space="preserve">
+    <value>Do not use Object IDs as object references</value>
+    <comment/>
+  </data>
+  <data name="ObjectIdInDeclarationFormat" xml:space="preserve">
+    <value>Object ID '{0}' used as object reference. Use the object name '{1}' instead.</value>
+    <comment/>
+  </data>
+  <data name="ObjectIdInDeclarationFormatWithoutCodeFix" xml:space="preserve">
+    <value>Object ID '{0}' used as object reference.</value>
+    <comment/>
+  </data>
+  <data name="ObjectIdInDeclarationDescription" xml:space="preserve">
+    <value>Using Object IDs in variable or property declarations reduces readability and prevents safe renaming. Object IDs are numeric and provide no semantic meaning, making the code harder to understand and maintain. Declare variables and properties using the resolved object name rather than a numeric Object ID.</value>
+    <comment/>
+  </data>
+  <data name="ObjectIdInDeclarationActionTitle" xml:space="preserve">
+    <value>ALCops: Replace id with name of object reference</value>
+    <comment/>
+  </data>
   <data name="RecordInstanceIsolationLevelTitle" xml:space="preserve">
     <value>Use ReadIsolation instead of LockTable</value>
     <comment/>
