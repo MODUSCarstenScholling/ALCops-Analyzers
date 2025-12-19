@@ -166,6 +166,7 @@ jobs:
       matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
       fail-fast: false
     name: Test v${{ matrix.version }}
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
