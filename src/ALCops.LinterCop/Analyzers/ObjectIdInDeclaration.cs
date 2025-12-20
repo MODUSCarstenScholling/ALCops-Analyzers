@@ -55,7 +55,13 @@ public class ObjectIdInDeclaration : DiagnosticAnalyzer
 
         var referencedApplicationObject = ctx.SemanticModel.Compilation.GetApplicationObjectTypeSymbolsByIdAcrossModulesWithReflection(symbolKind, objectId).FirstOrDefault();
         if (referencedApplicationObject == null)
+        {
+            ctx.ReportDiagnostic(Diagnostic.Create(
+                DiagnosticDescriptors.ObjectIdInDeclarationWithoutCodeFix,
+                ctx.Node.GetLocation(),
+                objectId));
             return;
+        }
 
         ctx.ReportDiagnostic(
             CreateDiagnostic(
@@ -85,7 +91,7 @@ public class ObjectIdInDeclaration : DiagnosticAnalyzer
         if (targetMethod.Parameters[0].ParameterType.NavTypeKind != EnumProvider.NavTypeKind.Integer)
             return;
 
-        // Only allow RecordRef instances (more expensive check moved down)
+        // Special treatment for RecordRef where we only allow variables of that type
         if (invocation.Instance is IOperation instance &&
             instance.Type.NavTypeKind != EnumProvider.NavTypeKind.RecordRef)
             return;
@@ -171,7 +177,13 @@ public class ObjectIdInDeclaration : DiagnosticAnalyzer
 
         var referencedApplicationObject = eventSubscriberAttribute.GetReferencedApplicationObject();
         if (referencedApplicationObject == null)
+        {
+            ctx.ReportDiagnostic(Diagnostic.Create(
+                DiagnosticDescriptors.ObjectIdInDeclarationWithoutCodeFix,
+                eventSubscriberAttribute.Arguments[1].GetLocation(),
+                objectId));
             return;
+        }
 
         ctx.ReportDiagnostic(
             CreateDiagnostic(
