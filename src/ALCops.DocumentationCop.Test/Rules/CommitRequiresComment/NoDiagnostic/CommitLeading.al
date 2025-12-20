@@ -2,7 +2,7 @@
 {
     procedure MyProcedure()
     begin
-        //Comment
+        // MyComment
         [|Commit();|]
     end;
 }
