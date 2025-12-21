@@ -18,7 +18,8 @@ public class NotBlankOnPrimaryKeyField : DiagnosticAnalyzer
 
     public override void Initialize(AnalysisContext context) =>
         context.RegisterSymbolAction(
-            new Action<SymbolAnalysisContext>(this.AnalyzePrimaryKeyForNotBlankProperty), EnumProvider.SymbolKind.Table);
+            this.AnalyzePrimaryKeyForNotBlankProperty,
+            EnumProvider.SymbolKind.Table);
 
     private void AnalyzePrimaryKeyForNotBlankProperty(SymbolAnalysisContext ctx)
     {

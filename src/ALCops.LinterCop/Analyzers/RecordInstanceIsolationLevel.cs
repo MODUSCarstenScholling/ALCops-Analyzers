@@ -16,7 +16,9 @@ public class RecordInstanceIsolationLevel : DiagnosticAnalyzer
         VersionProvider.VersionCompatibility.Spring2023OrGreater;
 
     public override void Initialize(AnalysisContext context) =>
-        context.RegisterOperationAction(new Action<OperationAnalysisContext>(this.CheckLockTable), EnumProvider.OperationKind.InvocationExpression);
+        context.RegisterOperationAction(
+            this.CheckLockTable,
+            EnumProvider.OperationKind.InvocationExpression);
 
     private void CheckLockTable(OperationAnalysisContext ctx)
     {

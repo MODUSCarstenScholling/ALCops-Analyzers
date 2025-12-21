@@ -14,7 +14,9 @@ public class EditableFlowField : DiagnosticAnalyzer
         ImmutableArray.Create(DiagnosticDescriptors.EditableFlowField);
 
     public override void Initialize(AnalysisContext context) =>
-        context.RegisterSymbolAction(new Action<SymbolAnalysisContext>(this.AnalyzeFlowFieldEditable), EnumProvider.SymbolKind.Field);
+        context.RegisterSymbolAction(
+            this.AnalyzeFlowFieldEditable,
+            EnumProvider.SymbolKind.Field);
 
     private void AnalyzeFlowFieldEditable(SymbolAnalysisContext ctx)
     {

@@ -19,7 +19,9 @@ public class SetRangeWithFilterOperators : DiagnosticAnalyzer
         ImmutableArray.Create(DiagnosticDescriptors.SetRangeWithFilterOperators);
 
     public override void Initialize(AnalysisContext context) =>
-        context.RegisterOperationAction(new Action<OperationAnalysisContext>(this.AnalyzeInvocation), EnumProvider.OperationKind.InvocationExpression);
+        context.RegisterOperationAction(
+            this.AnalyzeInvocation,
+            EnumProvider.OperationKind.InvocationExpression);
 
     private void AnalyzeInvocation(OperationAnalysisContext ctx)
     {

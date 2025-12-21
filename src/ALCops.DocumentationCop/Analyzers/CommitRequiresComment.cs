@@ -14,7 +14,8 @@ public class CommitRequiresComment : DiagnosticAnalyzer
         ImmutableArray.Create(DiagnosticDescriptors.CommitRequiresCommen);
 
     public override void Initialize(AnalysisContext context) =>
-        context.RegisterOperationAction(new Action<OperationAnalysisContext>(this.AnalyzeCommitHasComment),
+        context.RegisterOperationAction(
+            this.AnalyzeCommitHasComment,
             EnumProvider.OperationKind.InvocationExpression);
 
     private void AnalyzeCommitHasComment(OperationAnalysisContext ctx)

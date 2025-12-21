@@ -18,14 +18,17 @@ public class ObjectIdInDeclaration : DiagnosticAnalyzer
 
     public override void Initialize(AnalysisContext context)
     {
-        context.RegisterSyntaxNodeAction(new Action<SyntaxNodeAnalysisContext>(this.AnalyzeSyntaxNode),
+        context.RegisterSyntaxNodeAction(
+            this.AnalyzeSyntaxNode,
             EnumProvider.SyntaxKind.ObjectReference,
             EnumProvider.SyntaxKind.PermissionValue);
 
-        context.RegisterOperationAction(new Action<OperationAnalysisContext>(this.AnalyzeBuiltInInvocation),
+        context.RegisterOperationAction(
+            this.AnalyzeBuiltInInvocation,
             EnumProvider.OperationKind.InvocationExpression);
 
-        context.RegisterSymbolAction(new Action<SymbolAnalysisContext>(this.AnalyzeEventSubscriber),
+        context.RegisterSymbolAction(
+            this.AnalyzeEventSubscriber,
             EnumProvider.SymbolKind.Method);
     }
 

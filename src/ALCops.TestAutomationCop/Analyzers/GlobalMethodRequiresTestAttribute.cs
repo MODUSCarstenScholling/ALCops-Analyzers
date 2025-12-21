@@ -17,14 +17,11 @@ public class GlobalMethodRequiresTestAttribute : DiagnosticAnalyzer
     public override void Initialize(AnalysisContext context)
     {
         context.RegisterSymbolAction(
-            new Action<SymbolAnalysisContext>(this.Analyze),
-            new SymbolKind[]{
-                    EnumProvider.SymbolKind.Method,
-            }
-        );
+            this.AnalyzeMethod,
+            EnumProvider.SymbolKind.Method);
     }
 
-    private void Analyze(SymbolAnalysisContext ctx)
+    private void AnalyzeMethod(SymbolAnalysisContext ctx)
     {
         if (ctx.Symbol is not IMethodSymbol method || method.IsLocal)
             return;

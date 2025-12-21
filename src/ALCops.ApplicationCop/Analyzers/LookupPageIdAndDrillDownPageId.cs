@@ -15,7 +15,8 @@ public class LookupPageIdAndDrillDownPageId : DiagnosticAnalyzer
 
     public override void Initialize(AnalysisContext context) =>
         context.RegisterSymbolAction(
-            new Action<SymbolAnalysisContext>(this.CheckForLookupPageIdAndDrillDownPageId), EnumProvider.SymbolKind.Page);
+            this.CheckForLookupPageIdAndDrillDownPageId,
+            EnumProvider.SymbolKind.Page);
 
     private void CheckForLookupPageIdAndDrillDownPageId(SymbolAnalysisContext ctx)
     {

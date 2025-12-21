@@ -15,7 +15,8 @@ public class SemicolonAfterMethodOrTriggerDeclaration : DiagnosticAnalyzer
         ImmutableArray.Create(DiagnosticDescriptors.SemicolonAfterMethodOrTriggerDeclaration);
 
     public override void Initialize(AnalysisContext context) =>
-        context.RegisterSyntaxNodeAction(new Action<SyntaxNodeAnalysisContext>(this.AnalyzeSemicolonAfterMethodOrTriggerDeclaration),
+        context.RegisterSyntaxNodeAction(
+            this.AnalyzeSemicolonAfterMethodOrTriggerDeclaration,
             EnumProvider.SyntaxKind.MethodDeclaration,
             EnumProvider.SyntaxKind.TriggerDeclaration);
 

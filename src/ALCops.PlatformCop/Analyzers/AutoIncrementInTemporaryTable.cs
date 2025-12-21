@@ -13,7 +13,9 @@ public class AutoIncrementInTemporaryTable : DiagnosticAnalyzer
         ImmutableArray.Create(DiagnosticDescriptors.AutoIncrementInTemporaryTable);
 
     public override void Initialize(AnalysisContext context) =>
-        context.RegisterSymbolAction(new Action<SymbolAnalysisContext>(this.AnalyzeTemporaryTables), EnumProvider.SymbolKind.Table);
+        context.RegisterSymbolAction(
+            this.AnalyzeTemporaryTables,
+            EnumProvider.SymbolKind.Table);
 
     private void AnalyzeTemporaryTables(SymbolAnalysisContext ctx)
     {

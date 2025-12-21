@@ -17,10 +17,12 @@ public class WriteToFlowFieldRequiresComment : DiagnosticAnalyzer
 
     public override void Initialize(AnalysisContext context)
     {
-        context.RegisterOperationAction(new Action<OperationAnalysisContext>(this.AnalyzeAssignmentStatement),
+        context.RegisterOperationAction(
+            this.AnalyzeAssignmentStatement,
             EnumProvider.OperationKind.AssignmentStatement);
 
-        context.RegisterOperationAction(new Action<OperationAnalysisContext>(this.AnalyzeInvocationExpression),
+        context.RegisterOperationAction(
+            this.AnalyzeInvocationExpression,
             EnumProvider.OperationKind.InvocationExpression);
     }
 
