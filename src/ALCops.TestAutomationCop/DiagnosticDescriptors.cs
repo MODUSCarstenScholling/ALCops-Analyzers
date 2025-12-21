@@ -8,7 +8,7 @@ public static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor GlobalMethodRequiresTestAttribute = new(
         id: DiagnosticIds.GlobalMethodRequiresTestAttribute,
         title: TestAutomationCopAnalyzers.GlobalMethodRequiresTestAttributeTitle,
-        messageFormat: TestAutomationCopAnalyzers.GlobalMethodRequiresTestAttributeFormat,
+        messageFormat: TestAutomationCopAnalyzers.GlobalMethodRequiresTestAttributeMessageFormat,
         category: Category.Design,
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true,

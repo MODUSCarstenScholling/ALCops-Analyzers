@@ -8,7 +8,7 @@ public static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor ConfirmImplementConfirmManagement = new(
         id: DiagnosticIds.ConfirmImplementConfirmManagement,
         title: ApplicationCopAnalyzers.ConfirmImplementConfirmManagementTitle,
-        messageFormat: ApplicationCopAnalyzers.ConfirmImplementConfirmManagementFormat,
+        messageFormat: ApplicationCopAnalyzers.ConfirmImplementConfirmManagementMessageFormat,
         category: Category.Design,
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true,
@@ -18,7 +18,7 @@ public static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor GlobalLanguageImplementTranslationHelper = new(
         id: DiagnosticIds.GlobalLanguageImplementTranslationHelper,
         title: ApplicationCopAnalyzers.GlobalLanguageImplementTranslationHelperTitle,
-        messageFormat: ApplicationCopAnalyzers.GlobalLanguageImplementTranslationHelperFormat,
+        messageFormat: ApplicationCopAnalyzers.GlobalLanguageImplementTranslationHelperMessageFormat,
         category: Category.Design,
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true,
@@ -28,7 +28,7 @@ public static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor LookupPageIdAndDrillDownPageId = new(
         id: DiagnosticIds.LookupPageIdAndDrillDownPageId,
         title: ApplicationCopAnalyzers.LookupPageIdAndDrillDownPageIdTitle,
-        messageFormat: ApplicationCopAnalyzers.LookupPageIdAndDrillDownPageIdFormat,
+        messageFormat: ApplicationCopAnalyzers.LookupPageIdAndDrillDownPageIdMessageFormat,
         category: Category.Design,
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true,
@@ -38,7 +38,7 @@ public static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor NotBlankRequiredOnPrimaryKeyField = new(
         id: DiagnosticIds.NotBlankRequiredOnPrimaryKeyField,
         title: ApplicationCopAnalyzers.NotBlankRequiredOnPrimaryKeyFieldTitle,
-        messageFormat: ApplicationCopAnalyzers.NotBlankRequiredOnPrimaryKeyFieldFormat,
+        messageFormat: ApplicationCopAnalyzers.NotBlankRequiredOnPrimaryKeyFieldMessageFormat,
         category: Category.Design,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
@@ -48,7 +48,7 @@ public static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor NotBlankNotAllowedOnPrimaryKeyField = new(
         id: DiagnosticIds.NotBlankNotAllowedOnPrimaryKeyField,
         title: ApplicationCopAnalyzers.NotBlankNotAllowedOnPrimaryKeyFieldTitle,
-        messageFormat: ApplicationCopAnalyzers.NotBlankNotAllowedOnPrimaryKeyFieldFormat,
+        messageFormat: ApplicationCopAnalyzers.NotBlankNotAllowedOnPrimaryKeyFieldMessageFormat,
         category: Category.Design,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,

@@ -69,9 +69,9 @@ namespace ALCops.DocumentationCop {
         /// <summary>
         ///   Looks up a localized string similar to Commit() needs a comment to justify its existence. Add a leading or trailing comment explaining why it is required..
         /// </summary>
-        internal static string CommitRequiresCommentFormat {
+        internal static string CommitRequiresCommentMessageFormat {
             get {
-                return ResourceManager.GetString("CommitRequiresCommentFormat", resourceCulture);
+                return ResourceManager.GetString("CommitRequiresCommentMessageFormat", resourceCulture);
             }
         }
         
@@ -96,9 +96,9 @@ namespace ALCops.DocumentationCop {
         /// <summary>
         ///   Looks up a localized string similar to Writing to a FlowField is not common and requires a comment explaining why this assignment is intentional..
         /// </summary>
-        internal static string WriteToFlowFieldRequiresCommentFormat {
+        internal static string WriteToFlowFieldRequiresCommentMessageFormat {
             get {
-                return ResourceManager.GetString("WriteToFlowFieldRequiresCommentFormat", resourceCulture);
+                return ResourceManager.GetString("WriteToFlowFieldRequiresCommentMessageFormat", resourceCulture);
             }
         }
         

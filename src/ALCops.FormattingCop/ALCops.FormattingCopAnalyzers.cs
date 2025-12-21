@@ -69,9 +69,9 @@ namespace ALCops.FormattingCop {
         /// <summary>
         ///   Looks up a localized string similar to The {0} declaration ends with a semicolon. Remove the trailing semicolon from the declaration..
         /// </summary>
-        internal static string SemicolonAfterMethodOrTriggerDeclarationFormat {
+        internal static string SemicolonAfterMethodOrTriggerDeclarationMessageFormat {
             get {
-                return ResourceManager.GetString("SemicolonAfterMethodOrTriggerDeclarationFormat", resourceCulture);
+                return ResourceManager.GetString("SemicolonAfterMethodOrTriggerDeclarationMessageFormat", resourceCulture);
             }
         }
         

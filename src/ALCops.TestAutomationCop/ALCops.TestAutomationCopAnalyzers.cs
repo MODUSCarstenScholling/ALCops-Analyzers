@@ -69,9 +69,9 @@ namespace ALCops.TestAutomationCop {
         /// <summary>
         ///   Looks up a localized string similar to Global procedure &apos;{0}&apos; declared in a test codeunit without a [Test] attribute. Test codeunits may expose only test procedures; mark this procedure with [Test], make it local, or move shared logic to a library codeunit..
         /// </summary>
-        internal static string GlobalMethodRequiresTestAttributeFormat {
+        internal static string GlobalMethodRequiresTestAttributeMessageFormat {
             get {
-                return ResourceManager.GetString("GlobalMethodRequiresTestAttributeFormat", resourceCulture);
+                return ResourceManager.GetString("GlobalMethodRequiresTestAttributeMessageFormat", resourceCulture);
             }
         }
         

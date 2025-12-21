@@ -78,9 +78,9 @@ namespace ALCops.ApplicationCop {
         /// <summary>
         ///   Looks up a localized string similar to Confirm() must be implemented through the &quot;Confirm Management&quot; codeunit from the System Application..
         /// </summary>
-        internal static string ConfirmImplementConfirmManagementFormat {
+        internal static string ConfirmImplementConfirmManagementMessageFormat {
             get {
-                return ResourceManager.GetString("ConfirmImplementConfirmManagementFormat", resourceCulture);
+                return ResourceManager.GetString("ConfirmImplementConfirmManagementMessageFormat", resourceCulture);
             }
         }
         
@@ -114,9 +114,9 @@ namespace ALCops.ApplicationCop {
         /// <summary>
         ///   Looks up a localized string similar to GlobalLanguage() must be implemented through the &quot;Translation Helper&quot; codeunit from the Base Application..
         /// </summary>
-        internal static string GlobalLanguageImplementTranslationHelperFormat {
+        internal static string GlobalLanguageImplementTranslationHelperMessageFormat {
             get {
-                return ResourceManager.GetString("GlobalLanguageImplementTranslationHelperFormat", resourceCulture);
+                return ResourceManager.GetString("GlobalLanguageImplementTranslationHelperMessageFormat", resourceCulture);
             }
         }
         
@@ -141,9 +141,9 @@ namespace ALCops.ApplicationCop {
         /// <summary>
         ///   Looks up a localized string similar to Table &apos;{0}&apos; is used in a list page but does not define both the DrillDownPageId and LookupPageId properties..
         /// </summary>
-        internal static string LookupPageIdAndDrillDownPageIdFormat {
+        internal static string LookupPageIdAndDrillDownPageIdMessageFormat {
             get {
-                return ResourceManager.GetString("LookupPageIdAndDrillDownPageIdFormat", resourceCulture);
+                return ResourceManager.GetString("LookupPageIdAndDrillDownPageIdMessageFormat", resourceCulture);
             }
         }
         
@@ -177,9 +177,9 @@ namespace ALCops.ApplicationCop {
         /// <summary>
         ///   Looks up a localized string similar to The NotBlank property should be set to false (or removed) if a TableRelation of &apos;No. Series&apos; is present on the table..
         /// </summary>
-        internal static string NotBlankNotAllowedOnPrimaryKeyFieldFormat {
+        internal static string NotBlankNotAllowedOnPrimaryKeyFieldMessageFormat {
             get {
-                return ResourceManager.GetString("NotBlankNotAllowedOnPrimaryKeyFieldFormat", resourceCulture);
+                return ResourceManager.GetString("NotBlankNotAllowedOnPrimaryKeyFieldMessageFormat", resourceCulture);
             }
         }
         
@@ -213,9 +213,9 @@ namespace ALCops.ApplicationCop {
         /// <summary>
         ///   Looks up a localized string similar to NotBlank property should be set explicitly for tables with a single-field primary key..
         /// </summary>
-        internal static string NotBlankRequiredOnPrimaryKeyFieldFormat {
+        internal static string NotBlankRequiredOnPrimaryKeyFieldMessageFormat {
             get {
-                return ResourceManager.GetString("NotBlankRequiredOnPrimaryKeyFieldFormat", resourceCulture);
+                return ResourceManager.GetString("NotBlankRequiredOnPrimaryKeyFieldMessageFormat", resourceCulture);
             }
         }
         

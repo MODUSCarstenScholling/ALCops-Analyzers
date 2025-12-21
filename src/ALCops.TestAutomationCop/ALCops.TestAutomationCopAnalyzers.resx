@@ -121,7 +121,7 @@
     <value>Global procedures in test codeunits must be test methods</value>
     <comment/>
   </data>
-  <data name="GlobalMethodRequiresTestAttributeFormat" xml:space="preserve">
+  <data name="GlobalMethodRequiresTestAttributeMessageFormat" xml:space="preserve">
     <value>Global procedure '{0}' declared in a test codeunit without a [Test] attribute. Test codeunits may expose only test procedures; mark this procedure with [Test], make it local, or move shared logic to a library codeunit.</value>
     <comment/>
   </data>

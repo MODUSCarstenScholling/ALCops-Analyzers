@@ -8,7 +8,7 @@ public static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor AutoIncrementInTemporaryTable = new(
         id: DiagnosticIds.AutoIncrementInTemporaryTable,
         title: PlatformCopAnalyzers.AutoIncrementInTemporaryTableTitle,
-        messageFormat: PlatformCopAnalyzers.AutoIncrementInTemporaryTableFormat,
+        messageFormat: PlatformCopAnalyzers.AutoIncrementInTemporaryTableMessageFormat,
         category: Category.Design,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true,
@@ -18,7 +18,7 @@ public static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor EditableFlowField = new(
         id: DiagnosticIds.EditableFlowField,
         title: PlatformCopAnalyzers.EditableFlowFieldTitle,
-        messageFormat: PlatformCopAnalyzers.EditableFlowFieldFormat,
+        messageFormat: PlatformCopAnalyzers.EditableFlowFieldMessageFormat,
         category: Category.Design,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
@@ -28,7 +28,7 @@ public static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor SetRangeWithFilterOperators = new(
         id: DiagnosticIds.SetRangeWithFilterOperators,
         title: PlatformCopAnalyzers.SetRangeWithFilterOperatorsTitle,
-        messageFormat: PlatformCopAnalyzers.SetRangeWithFilterOperatorsFormat,
+        messageFormat: PlatformCopAnalyzers.SetRangeWithFilterOperatorsMessageFormat,
         category: Category.Design,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true,

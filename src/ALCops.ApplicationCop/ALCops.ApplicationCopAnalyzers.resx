@@ -120,7 +120,7 @@
   <data name="ConfirmImplementConfirmManagementTitle" xml:space="preserve">
     <value>Confirm() must be implemented through the "Confirm Management" codeunit</value>
   </data>
-  <data name="ConfirmImplementConfirmManagementFormat" xml:space="preserve">
+  <data name="ConfirmImplementConfirmManagementMessageFormat" xml:space="preserve">
     <value>Confirm() must be implemented through the "Confirm Management" codeunit from the System Application.</value>
   </data>
   <data name="ConfirmImplementConfirmManagementDescription" xml:space="preserve">
@@ -132,7 +132,7 @@
   <data name="GlobalLanguageImplementTranslationHelperTitle" xml:space="preserve">
     <value>GlobalLanguage() must be implemented through the "Translation Helper" codeunit.</value>
   </data>
-  <data name="GlobalLanguageImplementTranslationHelperFormat" xml:space="preserve">
+  <data name="GlobalLanguageImplementTranslationHelperMessageFormat" xml:space="preserve">
     <value>GlobalLanguage() must be implemented through the "Translation Helper" codeunit from the Base Application.</value>
   </data>
   <data name="GlobalLanguageImplementTranslationHelperDescription" xml:space="preserve">
@@ -144,7 +144,7 @@
   <data name="LookupPageIdAndDrillDownPageIdTitle" xml:space="preserve">
     <value>DrillDownPageId and LookupPageId property must be defined for tables used in list pages</value>
   </data>
-  <data name="LookupPageIdAndDrillDownPageIdFormat" xml:space="preserve">
+  <data name="LookupPageIdAndDrillDownPageIdMessageFormat" xml:space="preserve">
     <value>Table '{0}' is used in a list page but does not define both the DrillDownPageId and LookupPageId properties.</value>
   </data>
   <data name="LookupPageIdAndDrillDownPageIdDescription" xml:space="preserve">
@@ -153,7 +153,7 @@
   <data name="NotBlankRequiredOnPrimaryKeyFieldTitle" xml:space="preserve">
     <value>Single-field primary key requires the NotBlank property</value>
   </data>
-  <data name="NotBlankRequiredOnPrimaryKeyFieldFormat" xml:space="preserve">
+  <data name="NotBlankRequiredOnPrimaryKeyFieldMessageFormat" xml:space="preserve">
     <value>NotBlank property should be set explicitly for tables with a single-field primary key.</value>
   </data>
   <data name="NotBlankRequiredOnPrimaryKeyFieldDescription" xml:space="preserve">
@@ -165,7 +165,7 @@
   <data name="NotBlankNotAllowedOnPrimaryKeyFieldTitle" xml:space="preserve">
     <value>Set NotBlank property to false when 'No. Series' TableRelation exists</value>
   </data>
-  <data name="NotBlankNotAllowedOnPrimaryKeyFieldFormat" xml:space="preserve">
+  <data name="NotBlankNotAllowedOnPrimaryKeyFieldMessageFormat" xml:space="preserve">
     <value>The NotBlank property should be set to false (or removed) if a TableRelation of 'No. Series' is present on the table.</value>
   </data>
   <data name="NotBlankNotAllowedOnPrimaryKeyFieldDescription" xml:space="preserve">

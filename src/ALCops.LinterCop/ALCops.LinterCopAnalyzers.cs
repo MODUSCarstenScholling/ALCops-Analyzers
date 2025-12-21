@@ -76,20 +76,20 @@ namespace ALCops.LinterCop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Object ID &apos;{0}&apos; used as object reference. Use the object name &apos;{1}&apos; instead..
-        /// </summary>
-        internal static string ObjectIdInDeclarationFormat {
-            get {
-                return ResourceManager.GetString("ObjectIdInDeclarationFormat", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Object ID &apos;{0}&apos; used as object reference..
         /// </summary>
         internal static string ObjectIdInDeclarationFormatWithoutCodeFix {
             get {
                 return ResourceManager.GetString("ObjectIdInDeclarationFormatWithoutCodeFix", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Object ID &apos;{0}&apos; used as object reference. Use the object name &apos;{1}&apos; instead..
+        /// </summary>
+        internal static string ObjectIdInDeclarationMessageFormat {
+            get {
+                return ResourceManager.GetString("ObjectIdInDeclarationMessageFormat", resourceCulture);
             }
         }
         
@@ -123,9 +123,9 @@ namespace ALCops.LinterCop {
         /// <summary>
         ///   Looks up a localized string similar to Use ReadIsolation(IsolationLevel::UpdLock) instead of LockTable()..
         /// </summary>
-        internal static string RecordInstanceIsolationLevelFormat {
+        internal static string RecordInstanceIsolationLevelMessageFormat {
             get {
-                return ResourceManager.GetString("RecordInstanceIsolationLevelFormat", resourceCulture);
+                return ResourceManager.GetString("RecordInstanceIsolationLevelMessageFormat", resourceCulture);
             }
         }
         

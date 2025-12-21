@@ -121,7 +121,7 @@
     <value>Do not use Object IDs as object references</value>
     <comment/>
   </data>
-  <data name="ObjectIdInDeclarationFormat" xml:space="preserve">
+  <data name="ObjectIdInDeclarationMessageFormat" xml:space="preserve">
     <value>Object ID '{0}' used as object reference. Use the object name '{1}' instead.</value>
     <comment/>
   </data>
@@ -141,7 +141,7 @@
     <value>Use ReadIsolation instead of LockTable</value>
     <comment/>
   </data>
-  <data name="RecordInstanceIsolationLevelFormat" xml:space="preserve">
+  <data name="RecordInstanceIsolationLevelMessageFormat" xml:space="preserve">
     <value>Use ReadIsolation(IsolationLevel::UpdLock) instead of LockTable().</value>
     <comment/>
   </data>

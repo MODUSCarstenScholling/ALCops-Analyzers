@@ -8,7 +8,7 @@ public static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor SemicolonAfterMethodOrTriggerDeclaration = new(
         id: DiagnosticIds.SemicolonAfterMethodOrTriggerDeclaration,
         title: FormattingCopAnalyzers.SemicolonAfterMethodOrTriggerDeclarationTitle,
-        messageFormat: FormattingCopAnalyzers.SemicolonAfterMethodOrTriggerDeclarationFormat,
+        messageFormat: FormattingCopAnalyzers.SemicolonAfterMethodOrTriggerDeclarationMessageFormat,
         category: Category.Design,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,

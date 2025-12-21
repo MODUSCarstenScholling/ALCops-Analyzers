@@ -9,7 +9,7 @@ public static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor ObjectIdInDeclaration = new(
         id: DiagnosticIds.ObjectIdInDeclaration,
         title: LinterCopAnalyzers.ObjectIdInDeclarationTitle,
-        messageFormat: LinterCopAnalyzers.ObjectIdInDeclarationFormat,
+        messageFormat: LinterCopAnalyzers.ObjectIdInDeclarationMessageFormat,
         category: Category.Design,
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
@@ -29,7 +29,7 @@ public static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor RecordInstanceIsolationLevel = new(
         id: DiagnosticIds.RecordInstanceIsolationLevel,
         title: LinterCopAnalyzers.RecordInstanceIsolationLevelTitle,
-        messageFormat: LinterCopAnalyzers.RecordInstanceIsolationLevelFormat,
+        messageFormat: LinterCopAnalyzers.RecordInstanceIsolationLevelMessageFormat,
         category: Category.Design,
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true,

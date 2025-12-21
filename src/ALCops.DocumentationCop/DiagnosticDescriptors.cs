@@ -8,7 +8,7 @@ public static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor CommitRequiresCommen = new(
         id: DiagnosticIds.CommitRequiresComment,
         title: DocumentationCopAnalyzers.CommitRequiresCommentTitle,
-        messageFormat: DocumentationCopAnalyzers.CommitRequiresCommentFormat,
+        messageFormat: DocumentationCopAnalyzers.CommitRequiresCommentMessageFormat,
         category: Category.Design,
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true,
@@ -18,7 +18,7 @@ public static class DiagnosticDescriptors
     public static readonly DiagnosticDescriptor WriteToFlowFieldRequiresComment = new(
         id: DiagnosticIds.WriteToFlowFieldRequiresComment,
         title: DocumentationCopAnalyzers.WriteToFlowFieldRequiresCommentTitle,
-        messageFormat: DocumentationCopAnalyzers.WriteToFlowFieldRequiresCommentFormat,
+        messageFormat: DocumentationCopAnalyzers.WriteToFlowFieldRequiresCommentMessageFormat,
         category: Category.Design,
         defaultSeverity: DiagnosticSeverity.Info,
         isEnabledByDefault: true,

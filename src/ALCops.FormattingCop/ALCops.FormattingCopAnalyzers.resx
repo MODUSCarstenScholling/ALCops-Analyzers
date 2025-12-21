@@ -121,7 +121,7 @@
     <value>Procedure or Trigger declaration should not end with semicolon</value>
     <comment/>
   </data>
-  <data name="SemicolonAfterMethodOrTriggerDeclarationFormat" xml:space="preserve">
+  <data name="SemicolonAfterMethodOrTriggerDeclarationMessageFormat" xml:space="preserve">
     <value>The {0} declaration ends with a semicolon. Remove the trailing semicolon from the declaration.</value>
     <comment/>
   </data>

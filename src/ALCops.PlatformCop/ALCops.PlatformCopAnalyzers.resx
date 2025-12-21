@@ -120,7 +120,7 @@
   <data name="AutoIncrementInTemporaryTableTitle" xml:space="preserve">
     <value>AutoIncrement fields are not supported in temporary tables</value>
   </data>
-  <data name="AutoIncrementInTemporaryTableFormat" xml:space="preserve">
+  <data name="AutoIncrementInTemporaryTableMessageFormat" xml:space="preserve">
     <value>AutoIncrement is used in a table with TableType = Temporary, which will cause a runtime error. Remove AutoIncrement or make the table non-temporary.</value>
   </data>
   <data name="AutoIncrementInTemporaryTableDescription" xml:space="preserve">
@@ -129,7 +129,7 @@
   <data name="EditableFlowFieldTitle" xml:space="preserve">
     <value>FlowFields should not be editable</value>
   </data>
-  <data name="EditableFlowFieldFormat" xml:space="preserve">
+  <data name="EditableFlowFieldMessageFormat" xml:space="preserve">
     <value>Field '{0}' is editable, which is uncommon for a FlowField. Set Editable = false, or add a comment to justify why editing is intentional.</value>
   </data>
   <data name="EditableFlowFieldDescription" xml:space="preserve">
@@ -141,7 +141,7 @@
   <data name="SetRangeWithFilterOperatorsTitle" xml:space="preserve">
     <value>Filter operators should not be used in SetRange</value>
   </data>
-  <data name="SetRangeWithFilterOperatorsFormat" xml:space="preserve">
+  <data name="SetRangeWithFilterOperatorsMessageFormat" xml:space="preserve">
     <value>SetRange is called with a filter expression. Use SetFilter instead.</value>
   </data>
   <data name="SetRangeWithFilterOperatorsDescription" xml:space="preserve">

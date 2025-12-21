@@ -69,9 +69,9 @@ namespace ALCops.PlatformCop {
         /// <summary>
         ///   Looks up a localized string similar to AutoIncrement is used in a table with TableType = Temporary, which will cause a runtime error. Remove AutoIncrement or make the table non-temporary..
         /// </summary>
-        internal static string AutoIncrementInTemporaryTableFormat {
+        internal static string AutoIncrementInTemporaryTableMessageFormat {
             get {
-                return ResourceManager.GetString("AutoIncrementInTemporaryTableFormat", resourceCulture);
+                return ResourceManager.GetString("AutoIncrementInTemporaryTableMessageFormat", resourceCulture);
             }
         }
         
@@ -105,9 +105,9 @@ namespace ALCops.PlatformCop {
         /// <summary>
         ///   Looks up a localized string similar to Field &apos;{0}&apos; is editable, which is uncommon for a FlowField. Set Editable = false, or add a comment to justify why editing is intentional..
         /// </summary>
-        internal static string EditableFlowFieldFormat {
+        internal static string EditableFlowFieldMessageFormat {
             get {
-                return ResourceManager.GetString("EditableFlowFieldFormat", resourceCulture);
+                return ResourceManager.GetString("EditableFlowFieldMessageFormat", resourceCulture);
             }
         }
         
@@ -141,9 +141,9 @@ namespace ALCops.PlatformCop {
         /// <summary>
         ///   Looks up a localized string similar to SetRange is called with a filter expression. Use SetFilter instead..
         /// </summary>
-        internal static string SetRangeWithFilterOperatorsFormat {
+        internal static string SetRangeWithFilterOperatorsMessageFormat {
             get {
-                return ResourceManager.GetString("SetRangeWithFilterOperatorsFormat", resourceCulture);
+                return ResourceManager.GetString("SetRangeWithFilterOperatorsMessageFormat", resourceCulture);
             }
         }
         
