@@ -166,7 +166,6 @@ jobs:
       matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
       fail-fast: false
     name: Test v${{ matrix.version }}
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -185,15 +184,18 @@ jobs:
 
       # ALCops.ApplicationCop
       - name: Download ALCops.ApplicationCop biniaries
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: ALCops.ApplicationCop
           path: ./src/ALCops.ApplicationCop/bin/Release/
 
       - name: Restore ALCops.ApplicationCop.Test
+        continue-on-error: true
         run: dotnet restore ./src/ALCops.ApplicationCop.Test/ALCops.ApplicationCop.Test.csproj /p:NavTargetFramework=${{ matrix.tfm }}
 
       - name: Run ALCops.ApplicationCop.Test
+        continue-on-error: true
         run: >
           dotnet test ./src/ALCops.ApplicationCop.Test/ALCops.ApplicationCop.Test.csproj
           -p:NavTargetFramework=${{ matrix.tfm }}
@@ -205,15 +207,18 @@ jobs:
 
       # ALCops.DocumentationCop
       - name: Download ALCops.DocumentationCop biniaries
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: ALCops.DocumentationCop
           path: ./src/ALCops.DocumentationCop/bin/Release/
 
       - name: Restore ALCops.DocumentationCop.Test
+        continue-on-error: true
         run: dotnet restore ./src/ALCops.DocumentationCop.Test/ALCops.DocumentationCop.Test.csproj /p:NavTargetFramework=${{ matrix.tfm }}
 
       - name: Run ALCops.DocumentationCop.Test
+        continue-on-error: true
         run: >
           dotnet test ./src/ALCops.DocumentationCop.Test/ALCops.DocumentationCop.Test.csproj
           -p:NavTargetFramework=${{ matrix.tfm }}
@@ -225,15 +230,18 @@ jobs:
           
       # ALCops.FormattingCop
       - name: Download ALCops.FormattingCop biniaries
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: ALCops.FormattingCop
           path: ./src/ALCops.FormattingCop/bin/Release/
 
       - name: Restore ALCops.FormattingCop.Test
+        continue-on-error: true
         run: dotnet restore ./src/ALCops.FormattingCop.Test/ALCops.FormattingCop.Test.csproj /p:NavTargetFramework=${{ matrix.tfm }}
 
       - name: Run ALCops.FormattingCop.Test
+        continue-on-error: true
         run: >
           dotnet test ./src/ALCops.FormattingCop.Test/ALCops.FormattingCop.Test.csproj
           -p:NavTargetFramework=${{ matrix.tfm }}
@@ -245,15 +253,18 @@ jobs:
 
       # ALCops.LinterCop
       - name: Download ALCops.LinterCop biniaries
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: ALCops.LinterCop
           path: ./src/ALCops.LinterCop/bin/Release/
 
       - name: Restore ALCops.LinterCop.Test
+        continue-on-error: true
         run: dotnet restore ./src/ALCops.LinterCop.Test/ALCops.LinterCop.Test.csproj /p:NavTargetFramework=${{ matrix.tfm }}
 
       - name: Run ALCops.LinterCop.Test
+        continue-on-error: true
         run: >
           dotnet test ./src/ALCops.LinterCop.Test/ALCops.LinterCop.Test.csproj
           -p:NavTargetFramework=${{ matrix.tfm }}
@@ -265,15 +276,18 @@ jobs:
 
       # ALCops.PlatformCop
       - name: Download ALCops.PlatformCop biniaries
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: ALCops.PlatformCop
           path: ./src/ALCops.PlatformCop/bin/Release/
 
       - name: Restore ALCops.PlatformCop.Test
+        continue-on-error: true
         run: dotnet restore ./src/ALCops.PlatformCop.Test/ALCops.PlatformCop.Test.csproj /p:NavTargetFramework=${{ matrix.tfm }}
 
       - name: Run ALCops.PlatformCop.Test
+        continue-on-error: true
         run: >
           dotnet test ./src/ALCops.PlatformCop.Test/ALCops.PlatformCop.Test.csproj
           -p:NavTargetFramework=${{ matrix.tfm }}
@@ -285,15 +299,18 @@ jobs:
 
       # ALCops.TestAutomationCop
       - name: Download ALCops.TestAutomationCop biniaries
+        continue-on-error: true
         uses: actions/download-artifact@v4
         with:
           name: ALCops.TestAutomationCop
           path: ./src/ALCops.TestAutomationCop/bin/Release/
 
       - name: Restore ALCops.TestAutomationCop.Test
+        continue-on-error: true
         run: dotnet restore ./src/ALCops.TestAutomationCop.Test/ALCops.TestAutomationCop.Test.csproj /p:NavTargetFramework=${{ matrix.tfm }}
 
       - name: Run ALCops.TestAutomationCop.Test
+        continue-on-error: true
         run: >
           dotnet test ./src/ALCops.TestAutomationCop.Test/ALCops.TestAutomationCop.Test.csproj
           -p:NavTargetFramework=${{ matrix.tfm }}
@@ -304,10 +321,12 @@ jobs:
           --logger "trx;LogFileName=TestAutomationCop_AL_${{ matrix.version }}.trx"              
 
       - name: Install dotnet-trx-merge
+        if: always()
         run: |
           dotnet tool install --global dotnet-trx-merge
 
       - name: Merge Test Results
+        if: always()
         run: |
           trx-merge --dir ./TestResults/ --output ./TestResults_${{ matrix.version }}.trx
           
@@ -343,3 +362,4 @@ jobs:
           name: Test results
           path: "**/*.trx"
           reporter: dotnet-trx
+          list-suites: 'failed'
