@@ -63,7 +63,7 @@ public static class DiagnosticDescriptors
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description: ApplicationCopAnalyzers.NotBlankNotAllowedOnPrimaryKeyFieldDescription,
-        helpLinkUri: GetHelpUri(DiagnosticIds.NotBlankRequiredOnPrimaryKeyField));
+        helpLinkUri: GetHelpUri(DiagnosticIds.NotBlankNotAllowedOnPrimaryKeyField));
 
     public static readonly DiagnosticDescriptor PermissionSetCaptionLength = new(
         id: DiagnosticIds.PermissionSetCaptionLength,
@@ -73,7 +73,17 @@ public static class DiagnosticDescriptors
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description: ApplicationCopAnalyzers.PermissionSetCaptionLengthDescription,
-        helpLinkUri: GetHelpUri(DiagnosticIds.NotBlankRequiredOnPrimaryKeyField));
+        helpLinkUri: GetHelpUri(DiagnosticIds.PermissionSetCaptionLength));
+
+    public static readonly DiagnosticDescriptor PermissionSetCoverage = new(
+        id: DiagnosticIds.PermissionSetCoverage,
+        title: ApplicationCopAnalyzers.PermissionSetCoverageTitle,
+        messageFormat: ApplicationCopAnalyzers.PermissionSetCoverageMessageFormat,
+        category: Category.Design,
+        defaultSeverity: DiagnosticSeverity.Warning,
+        isEnabledByDefault: true,
+        description: ApplicationCopAnalyzers.PermissionSetCoverageDescription,
+        helpLinkUri: GetHelpUri(DiagnosticIds.PermissionSetCoverage));
 
     public static readonly DiagnosticDescriptor RunPageImplementPageManagement = new(
         id: DiagnosticIds.RunPageImplementPageManagement,
@@ -83,7 +93,7 @@ public static class DiagnosticDescriptors
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
         description: ApplicationCopAnalyzers.RunPageImplementPageManagementDescription,
-        helpLinkUri: GetHelpUri(DiagnosticIds.NotBlankRequiredOnPrimaryKeyField));
+        helpLinkUri: GetHelpUri(DiagnosticIds.RunPageImplementPageManagement));
 
     public static readonly DiagnosticDescriptor TableDataPerCompanyDeclaration = new(
         id: DiagnosticIds.TableDataPerCompanyDeclaration,
