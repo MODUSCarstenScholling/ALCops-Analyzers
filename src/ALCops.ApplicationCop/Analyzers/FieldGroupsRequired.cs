@@ -10,7 +10,7 @@ using Microsoft.Dynamics.Nav.CodeAnalysis.Text;
 namespace ALCops.ApplicationCop.Analyzers;
 
 [DiagnosticAnalyzer]
-public class FieldGroupsRequired : DiagnosticAnalyzer
+public sealed class FieldGroupsRequired : DiagnosticAnalyzer
 {
     private const string FieldGroupNameBrick = "Brick";
     private const string FieldGroupNameDropDown = "DropDown";
