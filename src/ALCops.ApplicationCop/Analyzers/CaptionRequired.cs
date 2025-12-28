@@ -8,7 +8,7 @@ using Microsoft.Dynamics.Nav.CodeAnalysis.Symbols;
 namespace ALCops.ApplicationCop.Analyzers;
 
 [DiagnosticAnalyzer]
-public class CaptionRequired : DiagnosticAnalyzer
+public sealed class CaptionRequired : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
         ImmutableArray.Create(
