@@ -8,7 +8,7 @@ using Microsoft.Dynamics.Nav.CodeAnalysis.Symbols;
 namespace ALCops.LinterCop.Analyzers;
 
 [DiagnosticAnalyzer]
-public class UseSecretTextForSensitiveText : DiagnosticAnalyzer
+public sealed class UseSecretTextForSensitiveText : DiagnosticAnalyzer
 {
     private const string AuthorizationHeaderName = "Authorization";
 

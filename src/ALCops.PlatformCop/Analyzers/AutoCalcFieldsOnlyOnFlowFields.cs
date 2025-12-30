@@ -6,7 +6,7 @@ using Microsoft.Dynamics.Nav.CodeAnalysis.Diagnostics;
 namespace ALCops.PlatformCop.Analyzers;
 
 [DiagnosticAnalyzer]
-public class AutoCalcFieldsOnlyOnFlowFields : DiagnosticAnalyzer
+public sealed class AutoCalcFieldsOnlyOnFlowFields : DiagnosticAnalyzer
 {
     private const string SetAutoCalcFieldsMethodName = "SetAutoCalcFields";
 

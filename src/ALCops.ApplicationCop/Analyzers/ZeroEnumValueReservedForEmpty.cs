@@ -9,7 +9,7 @@ using Microsoft.Dynamics.Nav.CodeAnalysis.Text;
 namespace ALCops.ApplicationCop.Analyzers;
 
 [DiagnosticAnalyzer]
-public class ZeroEnumValueReservedForEmpty : DiagnosticAnalyzer
+public sealed class ZeroEnumValueReservedForEmpty : DiagnosticAnalyzer
 {
     private const string CaptionPropertyName = "Caption";
     private const int ReservedValue = 0;

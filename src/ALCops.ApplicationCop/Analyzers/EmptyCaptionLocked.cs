@@ -8,7 +8,7 @@ using Microsoft.Dynamics.Nav.CodeAnalysis.Syntax;
 namespace ALCops.ApplicationCop.Analyzers;
 
 [DiagnosticAnalyzer]
-public class EmptyCaptionLocked : DiagnosticAnalyzer
+public sealed class EmptyCaptionLocked : DiagnosticAnalyzer
 {
     private const string CaptionPropertyName = "Caption";
     private const string LockedPropertyName = "Locked";
