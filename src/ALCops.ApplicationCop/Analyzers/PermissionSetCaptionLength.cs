@@ -1,4 +1,5 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
+using ALCops.Common.Extensions;
 using ALCops.Common.Reflection;
 using Microsoft.Dynamics.Nav.CodeAnalysis;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Diagnostics;
@@ -10,8 +11,6 @@ namespace ALCops.ApplicationCop.Analyzers;
 public sealed class PermissionSetCaptionLength : DiagnosticAnalyzer
 {
     private const int MaxCaptionLength = 30;
-    private const string LockedPropertyName = "Locked";
-    private const string MaxLengthPropertyName = "MaxLength";
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
         ImmutableArray.Create(
@@ -37,58 +36,35 @@ public sealed class PermissionSetCaptionLength : DiagnosticAnalyzer
             return;
         }
 
-        var subProperties = ExtractSubProperties(captionProperty);
-        if (subProperties is null)
+        var properties =
+            captionProperty.DeclaringSyntaxReference?
+                .GetSyntax()
+                .DescendantNodes()
+                .OfType<CommaSeparatedIdentifierEqualsLiteralListSyntax>()
+                .FirstOrDefault();
+
+        if (properties is null)
         {
-            if (captionProperty is not null)
-                ctx.ReportDiagnostic(Diagnostic.Create(
-                    DiagnosticDescriptors.PermissionSetCaptionLength,
-                    captionProperty.GetLocation(),
-                    MaxCaptionLength));
+            ctx.ReportDiagnostic(Diagnostic.Create(
+                DiagnosticDescriptors.PermissionSetCaptionLength,
+                captionProperty.GetLocation(),
+                MaxCaptionLength));
+
             return;
         }
 
         // Check if property "Locked = true" is applied
-        var lockedNode = subProperties.OfType<IdentifierEqualsLiteralSyntax>()
-                                    .FirstOrDefault(prop => prop.Identifier.ValueText?.Equals(LockedPropertyName, StringComparison.Ordinal) == true);
-        var isLocked = lockedNode is not null &&
-            lockedNode.DescendantNodes()
-                        .OfType<BooleanLiteralValueSyntax>()
-                        .Any(b => b.Value.IsKind(EnumProvider.SyntaxKind.TrueKeyword));
-
-        if (isLocked)
+        if (properties.GetBooleanPropertyValue(IdentifierProperty.Locked) == true)
             return;
 
         // Check MaxLength is set to the MaxCaptionLength of 30 (or less)
-        var maxLengthNode = subProperties.FirstOrDefault(node => node.ToString().Contains(MaxLengthPropertyName, StringComparison.OrdinalIgnoreCase));
-        if (maxLengthNode is not null &&
-            int.TryParse(maxLengthNode.DescendantNodes()?
-                        .OfType<Int32SignedLiteralValueSyntax>()?
-                        .FirstOrDefault()?.Number.ValueText, out int maxLength))
-        {
-            if (maxLength <= MaxCaptionLength)
-                return;
-        }
+        var maxLength = properties.GetIntegerPropertyValue(IdentifierProperty.MaxLength);
+        if (maxLength is not null && maxLength <= MaxCaptionLength)
+            return;
 
         ctx.ReportDiagnostic(Diagnostic.Create(
             DiagnosticDescriptors.PermissionSetCaptionLength,
             captionProperty.GetLocation(),
             MaxCaptionLength));
-    }
-
-    private IEnumerable<SyntaxNode> ExtractSubProperties(IPropertySymbol? captionProperty)
-    {
-        var syntaxReference = captionProperty?.DeclaringSyntaxReference;
-        if (syntaxReference is null)
-            return Enumerable.Empty<SyntaxNode>();
-
-        var syntaxNode = syntaxReference.GetSyntax();
-        if (syntaxNode is null)
-            return Enumerable.Empty<SyntaxNode>();
-
-        var subPropertyNode = syntaxNode.DescendantNodes()
-            .FirstOrDefault(e => e.Kind == EnumProvider.SyntaxKind.CommaSeparatedIdentifierEqualsLiteralList);
-
-        return subPropertyNode?.DescendantNodes() ?? Enumerable.Empty<SyntaxNode>();
     }
 }
