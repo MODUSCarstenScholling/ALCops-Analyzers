@@ -25,7 +25,6 @@ public sealed class EventSubscriberVarKeywordCodeFix : CodeFixProvider
             : base(title, createChangedDocument, equivalenceKey)
         {
             SupportsFixAll = generateFixAll;
-
         }
     }
 

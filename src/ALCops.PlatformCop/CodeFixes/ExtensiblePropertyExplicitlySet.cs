@@ -25,7 +25,6 @@ public sealed class ExtensiblePropertyExplicitlySetCodeFix : CodeFixProvider
             : base(title, createChangedDocument, equivalenceKey)
         {
             SupportsFixAll = generateFixAll;
-
         }
     }
 

@@ -26,7 +26,6 @@ public sealed class OperatorAndPlaceholderInFilterExpressionCodeFix : CodeFixPro
             : base(title, createChangedDocument, equivalenceKey)
         {
             SupportsFixAll = generateFixAll;
-
         }
     }
 

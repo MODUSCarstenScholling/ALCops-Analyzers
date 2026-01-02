@@ -26,7 +26,6 @@ public sealed class EditableFlowFieldCodeFix : CodeFixProvider
             : base(title, createChangedDocument, equivalenceKey)
         {
             SupportsFixAll = generateFixAll;
-
         }
     }
 
