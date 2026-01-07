@@ -19,4 +19,5 @@ public static class DiagnosticIds
     public static readonly string ClearCodeunitSingleInstance = "PC0016";
     public static readonly string PageRecordArgumentMismatch = "PC0017";
     public static readonly string PageRecordMethodRequiresSourceTable = "PC0018";
+    public static readonly string FilterStringSingleQuoteEscaping = "PC0019";
 }
