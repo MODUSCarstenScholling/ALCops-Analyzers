@@ -1,4 +1,5 @@
 using System.Reflection;
+using ALCops.Common.Reflection;
 using Microsoft.Dynamics.Nav.CodeAnalysis;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Symbols;
 
@@ -13,16 +14,28 @@ public static class ISymbolExtensions
         return declaredType as IPageTypeSymbol;
     }
 
+    public static string GetFullyQualifiedObjectName(this ISymbol symbol, bool quoteIdentifierIfNeeded = false)
+    {
+        var symbolName = quoteIdentifierIfNeeded
+               ? symbol.Name.QuoteIdentifierIfNeededWithReflection()
+               : symbol.Name;
+
+        var containingNamespace = symbol.GetContainingNamespaceQualifiedNameWithReflection();
+        if (string.IsNullOrEmpty(containingNamespace))
+            return symbolName;
+
+        return $"{containingNamespace}.{symbolName}";
+    }
+
+    #region Obsolete Extension Methods
     private static readonly Lazy<PropertyInfo?> _isObsoletePendingMoveProperty =
         new(() => typeof(ISymbol).GetProperty("IsObsoletePendingMove"));
 
     private static readonly Lazy<PropertyInfo?> _isObsoleteMovedProperty =
         new(() => typeof(ISymbol).GetProperty("IsObsoleteMoved"));
 
-    private static bool GetObsoletePropertyValue(ISymbol symbol, PropertyInfo? property)
-    {
-        return property?.GetValue(symbol) as bool? ?? false;
-    }
+    private static bool GetObsoletePropertyValue(ISymbol symbol, PropertyInfo? property) =>
+        property?.GetValue(symbol) as bool? ?? false;
 
     public static bool IsObsolete(this ISymbol symbol)
     {
@@ -45,4 +58,10 @@ public static class ISymbolExtensions
 
         return false;
     }
+    #endregion
+
+#if NETSTANDARD2_1
+    public static string ToDisplayStringWithReflection(this ISymbol symbol) =>
+        SymbolHelper.ToDisplayStringWithReflection(symbol);
+#endif
 }
