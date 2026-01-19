@@ -18,6 +18,7 @@ on:
       tfm-net80-version-lowest:
         description: "Target framework net8.0 lowest version"
         value: ${{ jobs.setup.outputs.tfm-net80-version-lowest }}
+  workflow_dispatch:
 
 env:
   DOTNET_NOLOGO: true
