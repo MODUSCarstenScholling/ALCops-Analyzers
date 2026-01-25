@@ -7,9 +7,6 @@ using Microsoft.Dynamics.Nav.CodeAnalysis.Diagnostics;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Symbols;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Syntax;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Text;
-#if NETSTANDARD2_1
-using Microsoft.Dynamics.Nav.CodeAnalysis.Symbols;
-#endif
 using Microsoft.Dynamics.Nav.CodeAnalysis.Utilities;
 using static ALCops.PlatformCop.Helpers.TransferFieldsRelations;
 
