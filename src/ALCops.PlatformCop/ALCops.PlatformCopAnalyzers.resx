@@ -310,7 +310,7 @@
     <value>ALCops: Wrap filter expression in StrSubstNo()</value>
   </data>
   <data name="PageRecordArgumentMismatchTitle" xml:space="preserve">
-  <value>Page record argument does not match source table</value>
+    <value>Page record argument does not match source table</value>
   </data>
   <data name="PageRecordArgumentMismatchMessageFormat" xml:space="preserve">
     <value>Argument {0}: cannot convert from {1} to {2}.</value>
@@ -319,7 +319,7 @@
     <value>This rule validates that record arguments passed to page-related operations match the page's SourceTable.</value>
   </data>
   <data name="PageRecordMethodRequiresSourceTableTitle" xml:space="preserve">
-  <value>Page record methods require a SourceTable</value>
+    <value>Page record methods require a SourceTable</value>
   </data>
   <data name="PageRecordMethodRequiresSourceTableMessageFormat" xml:space="preserve">
     <value>SourceTable property is not defined on Page '{0}'. Method '{1}' requires a SourceTable.</value>
