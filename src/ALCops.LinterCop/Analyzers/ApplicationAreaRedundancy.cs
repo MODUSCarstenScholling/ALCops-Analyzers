@@ -12,7 +12,7 @@ public sealed class ApplicationAreaRedundancy : DiagnosticAnalyzer
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
         ImmutableArray.Create(
             DiagnosticDescriptors.ApplicationAreaRedundancy);
-    public override VersionCompatibility SupportedVersions { get; } =
+    public override VersionCompatibility SupportedVersions =>
         VersionProvider.VersionCompatibility.Fall2022OrGreater;
 
     public override void Initialize(AnalysisContext context) =>
