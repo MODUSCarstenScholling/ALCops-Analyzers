@@ -2440,11 +2440,6 @@ internal static class TransferFieldsRelations
                 new Version(27, 2),
                 null),
             new TableRelation(
-                new ObjectName("System.Integration", "API Webhook Notification"),
-                new ObjectName("System.Integration", "API Webhook Notification Aggr"),
-                new Version(16, 0),
-                null),
-            new TableRelation(
                 new ObjectName("System.Integration", "Data Migration Error"),
                 new ObjectName("", "GP Migration Error Overview"),
                 new Version(23, 0),
@@ -2503,16 +2498,6 @@ internal static class TransferFieldsRelations
                 new ObjectName("System.Security.AccessControl", "Aggregate Permission Set"),
                 new ObjectName("System.Security.AccessControl", "Permission Set Buffer"),
                 new Version(16, 0),
-                null),
-            new TableRelation(
-                new ObjectName("System.Security.AccessControl", "Metadata Permission Set"),
-                new ObjectName("System.Security.AccessControl", "Tenant Permission Set"),
-                new Version(21, 0),
-                null),
-            new TableRelation(
-                new ObjectName("System.Security.AccessControl", "Metadata Permission Set Rel."),
-                new ObjectName("System.Security.AccessControl", "Tenant Permission Set Rel."),
-                new Version(21, 0),
                 null),
             new TableRelation(
                 new ObjectName("System.Threading", "Job Queue Entry"),
