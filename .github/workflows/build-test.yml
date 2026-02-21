@@ -339,7 +339,7 @@ jobs:
           path: |
             **/TestResults_${{ matrix.version }}.trx
   report:
-    if: ${{ !inputs.draft-check || github.event.pull_request.draft == false }}
+    if: ${{ always() && (!inputs.draft-check || github.event.pull_request.draft == false) }}
     needs: [setup, build, test]
     runs-on: ubuntu-latest
     name: Report
@@ -361,8 +361,11 @@ jobs:
         uses: dorny/test-reporter@v2
         with:
           name: Test results
+          report-title: 'ALCops Test Results'
           path: "**/*.trx"
           reporter: dotnet-trx
-          list-suites: 'failed'
-          fail-on-error: false
+          list-suites: 'all'
+          list-tests: 'failed'
+          collapsed: 'auto'
+          fail-on-error: true
           fail-on-empty: true
