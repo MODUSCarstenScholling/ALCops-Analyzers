@@ -364,7 +364,7 @@ jobs:
           report-title: 'ALCops Test Results'
           path: "**/*.trx"
           reporter: dotnet-trx
-          use-actions-summary: 'true'
+          use-actions-summary: 'false'
           list-suites: 'failed'
           list-tests: 'failed'
           collapsed: auto
