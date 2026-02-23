@@ -365,8 +365,8 @@ jobs:
           path: "**/*.trx"
           reporter: dotnet-trx
           use-actions-summary: 'false'
-          list-suites: 'failed'
+          list-suites: 'all'
           list-tests: 'failed'
-          collapsed: auto
+          collapsed: 'never'
           fail-on-error: true
           fail-on-empty: true
