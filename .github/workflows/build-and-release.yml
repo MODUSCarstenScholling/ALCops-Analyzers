@@ -26,6 +26,7 @@ on:
 permissions:
   contents: write
   packages: write
+  pull-requests: read
 
 jobs:
   build-and-test:
@@ -94,14 +95,23 @@ jobs:
           /p:FileVersion=${{ steps.gitversion.outputs.AssemblySemFileVer }}
           /p:InformationalVersion="${{ steps.gitversion.outputs.InformationalVersion }}"
 
+      - name: Build Changelog
+        id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@v5
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          ignorePreReleases: ${{ steps.gitversion.outputs.PreReleaseTag == '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/v')
         with:
           tag_name: v${{ steps.gitversion.outputs.SemVer }}
           name: v${{ steps.gitversion.outputs.SemVer }}
-          generate_release_notes: true
-          prerelease: ${{ contains(steps.gitversion.outputs.SemVer, '-') }}
+          body: ${{ steps.build_changelog.outputs.changelog }}
+          prerelease: ${{ steps.gitversion.outputs.PreReleaseTag != '' }}
           files: |
             ./artifacts/*.nupkg
 
