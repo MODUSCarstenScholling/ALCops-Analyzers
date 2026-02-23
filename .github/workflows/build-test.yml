@@ -339,7 +339,7 @@ jobs:
           path: |
             **/TestResults_${{ matrix.version }}.trx
   report:
-    if: ${{ !inputs.draft-check || github.event.pull_request.draft == false }}
+    if: ${{ always() && (!inputs.draft-check || github.event.pull_request.draft == false) }}
     needs: [setup, build, test]
     runs-on: ubuntu-latest
     name: Report
@@ -358,11 +358,15 @@ jobs:
           merge-multiple: true
 
       - name: Publish unified test report
-        uses: dorny/test-reporter@v1
+        uses: dorny/test-reporter@v2
         with:
           name: Test results
+          report-title: 'ALCops Test Results'
           path: "**/*.trx"
           reporter: dotnet-trx
+          use-actions-summary: 'false'
           list-suites: 'failed'
-          fail-on-error: false
+          list-tests: 'failed'
+          collapsed: 'never'
+          fail-on-error: true
           fail-on-empty: true
