@@ -30,6 +30,10 @@ Contributions are welcome! Whether it's a new rule idea, a bug report, or a pull
 - 🐛 **Report a bug** » File an [Issue](https://github.com/ALCops/Analyzers/issues/new)
 - 🔧 **Submit a PR** » Fork the repo, create a branch, and open a pull request
 
+## Thank you
+
+ALCops is a continuation of [BusinessCentral.LinterCop](https://github.com/StefanMaron/BusinessCentral.LinterCop) and this project wouldn't exist without the foundation built by that community. A heartfelt thank you to every contributor who invested their time, ideas, and code into the original LinterCop. Your work didn't end there, it lives on and grows further here in ALCops.
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
