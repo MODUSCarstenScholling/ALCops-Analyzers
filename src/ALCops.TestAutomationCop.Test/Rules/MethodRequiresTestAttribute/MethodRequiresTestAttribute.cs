@@ -1,3 +1,4 @@
+using Microsoft.Dynamics.Nav.CodeAnalysis;
 using RoslynTestKit;
 
 namespace ALCops.TestAutomationCop.Test
@@ -38,6 +39,27 @@ namespace ALCops.TestAutomationCop.Test
                 .ConfigureAwait(false);
 
             _fixture.NoDiagnosticAtAllMarkers(code, DiagnosticIds.GlobalMethodRequiresTestAttribute);
+        }
+
+        [TestCase("HttpClientHandler")]
+        public async Task NoDiagnosticWithTargetOnPrem(string testCase)
+        {
+            SkipTestIfVersionIsTooLow(
+                ["HttpClientHandler"],
+                testCase,
+                "15.0",
+                "No support for HttpClientHandler as a is not a valid attribute");
+
+            var code = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(NoDiagnostic), $"{testCase}.al"))
+                .ConfigureAwait(false);
+
+            var fixture = RoslynFixtureFactory.Create<Analyzers.GlobalMethodRequiresTestAttribute>(
+            new AnalyzerTestFixtureConfig
+            {
+                CompilationOptions = new CompilationOptions(target: CompilationTarget.OnPrem)
+            });
+
+            fixture.NoDiagnosticAtAllMarkers(code, DiagnosticIds.GlobalMethodRequiresTestAttribute);
         }
     }
 }
