@@ -104,27 +104,62 @@ runs:
           exit 1
         }
 
+    - name: Extract ALLanguage.vsix from BCArtifact
+      id: extract-vsix
+      if: steps.determine-bc-devtools-asset.outputs.asset-type == 'BCArtifact'
+      shell: pwsh
+      env:
+        ARCHIVE_PATH: ${{ steps.download-bc-devtools-asset.outputs.path }}
+        RUNNER_TEMP: ${{ runner.temp }}
+      run: |
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+        $archive = [System.IO.Compression.ZipFile]::OpenRead($env:ARCHIVE_PATH)
+        try {
+          $vsixEntry = $archive.Entries | Where-Object {
+            ($_.FullName -replace '\\', '/') -ieq 'ALLanguage.vsix'
+          } | Select-Object -First 1
+
+          if (-not $vsixEntry) {
+            Write-Error "❌ ALLanguage.vsix not found in BCArtifact archive: $($env:ARCHIVE_PATH)"
+            exit 1
+          }
+
+          $vsixPath = Join-Path $env:RUNNER_TEMP 'ALLanguage.vsix'
+          Write-Output "Extracting ALLanguage.vsix to: $vsixPath"
+          [System.IO.Compression.ZipFileExtensions]::ExtractToFile($vsixEntry, $vsixPath, $true)
+
+          $fileSizeMB = [math]::Round((Get-Item $vsixPath).Length / 1MB, 2)
+          Write-Output "✅ ALLanguage.vsix extracted successfully ($fileSizeMB MB)"
+
+          echo "path=$vsixPath" >> $env:GITHUB_OUTPUT
+        }
+        finally {
+          $archive.Dispose()
+        }
+
     - name: Extract BC DevTools asset
       # if: steps.get_platform_artifact.outputs.cache-hit != 'true'
       shell: pwsh
       env:
-        ARCHIVE_PATH: ${{ steps.download-bc-devtools-asset.outputs.path }}
+        ARCHIVE_PATH: ${{ steps.extract-vsix.outputs.path || steps.download-bc-devtools-asset.outputs.path }}
         ASSET_TYPE: ${{ steps.determine-bc-devtools-asset.outputs.asset-type }}
         TARGET_PATH: ${{ inputs.target-path }}
         ACTION_PATH: ${{ github.action_path }}
       run: |
         $pathInArchive = switch ($env:ASSET_TYPE) {
-          'VSIX' { 'extension/bin/Analyzers' }
-          'NuGet' { 'tools/net8.0/any' }
+          'VSIX'       { 'extension/bin/Analyzers' }
+          'NuGet'      { 'tools/net8.0/any' }
+          'BCArtifact' { 'extension/bin/Analyzers' }
           default { 
-            Write-Error "Invalid asset-type: $($env:ASSET_TYPE). Must be 'VSIX' or 'NuGet'."
+            Write-Error "Invalid asset-type: $($env:ASSET_TYPE). Must be 'VSIX', 'NuGet', or 'BCArtifact'."
             exit 1
           }
         }
 
         Write-Output "Extracting $($env:ASSET_TYPE) from path: $pathInArchive"
 
-        & "$env:ACTION_PATH\Extract-RequiredFiles.ps1" -DestinationPath $env:TARGET_PATH -ArchivePath $env:ARCHIVE_PATH -PathInArchive $pathInArchive
+        & "$env:ACTION_PATH\..\shared\Extract-RequiredFiles.ps1" -DestinationPath $env:TARGET_PATH -ArchivePath $env:ARCHIVE_PATH -PathInArchive $pathInArchive
 
     # - name: Add platform artifact to cache
     #   id: add_hash

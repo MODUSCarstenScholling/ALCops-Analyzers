@@ -69,11 +69,15 @@ function Find-MissingVersions {
         [array]$AllSources
     )
     
-    $existingVersions = $ExistingData | ForEach-Object { $_.Version }
+    # Use composite key (PackageType:PackageVersion) to uniquely identify each cached entry.
+    # Comparing on assembly version alone is unreliable: it is empty for uncached sources,
+    # and two different packages (VSIX + NuGet) can share the same assembly version.
+    $existingKeys = $ExistingData | ForEach-Object { "$($_.PackageType):$($_.PackageVersion)" }
     $missingVersions = @()
     
     foreach ($source in $AllSources) {
-        if ($source.version -notin $existingVersions) {
+        $key = "$($source.packageType):$($source.packageVersion)"
+        if ($key -notin $existingKeys) {
             $missingVersions += $source
         }
     }
@@ -145,6 +149,21 @@ function Get-AssemblyInfo {
                 }
             }
         }
+
+        # Last-resort fallback: some assemblies (e.g. older BC BCArtifact builds) are compiled
+        # without emitting TargetFrameworkAttribute at all. Infer the TFM from the referenced
+        # assemblies instead — a reference to 'netstandard' reliably identifies netstandard2.0
+        # builds, and a reference to 'System.Runtime' with no netstandard reference indicates net8.0+.
+        if ($targetFramework -eq 'unknown') {
+            $refNames = $assembly.GetReferencedAssemblies() | ForEach-Object { $_.Name }
+            $netstdRef = $assembly.GetReferencedAssemblies() | Where-Object { $_.Name -eq 'netstandard' }
+            if ($netstdRef) {
+                $targetFramework = "netstandard$($netstdRef.Version.Major).$($netstdRef.Version.Minor)"
+            }
+            elseif ('System.Runtime' -in $refNames) {
+                $targetFramework = 'net8.0'
+            }
+        }
         
         return [PSCustomObject]@{
             TargetFramework = $targetFramework
@@ -178,53 +197,74 @@ function Get-AssetInfo {
         Remove-Item $TempDirectory -Recurse -Force
     }
     New-Item -ItemType Directory -Path $TempDirectory -Force | Out-Null
-    
-    try {
-        # Download the asset
-        $fileName = if ($assetType -eq 'VSIX') { "$PackageVersion.vsix" } else { "$PackageVersion.nupkg" }
-        $downloadPath = Join-Path $TempDirectory $fileName
-        
-        Write-Host "  Downloading from: $uri" -ForegroundColor Gray
-        Invoke-WebRequest -Uri $uri -OutFile $downloadPath -TimeoutSec 60
-        
-        # Determine extraction path based on asset type
-        $pathInArchive = switch ($PackageType) {
-            'VSIX' { 'extension/bin/Analyzers' }
-            'NuGet' { 'tools/net8.0/any' }
-            default { 
-                throw "Unknown asset type: $PackageType"
+
+    # BCArtifact: the core artifact ZIP contains ALLanguage.vsix in its root.
+    # Step 1: HTTP Range-extract ALLanguage.vsix from the remote core ZIP (avoids full download).
+    # Step 2: Extract Microsoft.Dynamics.Nav.Analyzers.Common.dll from the now-local VSIX
+    #         (VSIX is itself a ZIP, but it is local so no nested HTTP range requests needed).
+    # Step 3: Reflect on the DLL via Get-AssemblyInfo — identical to the VSIX/NuGet path,
+    #         giving both the true AL Language assembly version and target framework moniker.
+    if ($PackageType -eq 'BCArtifact') {
+        $vsixPath = Join-Path $TempDirectory 'ALLanguage.vsix'
+        $dllPath = Join-Path $TempDirectory 'Microsoft.Dynamics.Nav.Analyzers.Common.dll'
+        try {
+            # Step 1: HTTP Range-extract ALLanguage.vsix from the remote core ZIP
+            $rangeScript = Join-Path (Split-Path $PSScriptRoot -Parent) 'shared\Get-RemoteZipEntry.ps1'
+            & $rangeScript -Uri $uri -EntryPath 'ALLanguage.vsix' -OutputPath $vsixPath
+
+            # Step 2: extract the Analyzers DLL from the now-local VSIX
+            $vsixZip = [System.IO.Compression.ZipFile]::OpenRead($vsixPath)
+            try {
+                $dllEntry = $vsixZip.Entries | Where-Object {
+                    $_.FullName -ieq 'extension/bin/Analyzers/Microsoft.Dynamics.Nav.Analyzers.Common.dll'
+                } | Select-Object -First 1
+
+                if (-not $dllEntry) {
+                    throw "Microsoft.Dynamics.Nav.Analyzers.Common.dll not found inside ALLanguage.vsix."
+                }
+
+                [System.IO.Compression.ZipFileExtensions]::ExtractToFile($dllEntry, $dllPath, $true)
             }
+            finally {
+                $vsixZip.Dispose()
+            }
+
+            # Step 3: reflect on the DLL — returns both TargetFramework and Version (AL assembly version)
+            return Get-AssemblyInfo -AssemblyPath $dllPath
         }
-        
-        # Extract the required files
-        $extractPath = Join-Path $TempDirectory 'extracted'
-        $extractScript = Join-Path (Split-Path $PSScriptRoot -Parent) 'setup-bc-devtools\Extract-RequiredFiles.ps1'
-        
-        # Load the required assembly for the extraction script
-        Add-Type -AssemblyName System.IO.Compression.FileSystem
-        & $extractScript -DestinationPath $extractPath -ArchivePath $downloadPath -PathInArchive $pathInArchive
-        
-        # Look for the target DLL
-        $dllPath = Join-Path $extractPath 'Microsoft.Dynamics.Nav.CodeAnalysis.dll'
-        
-        if (Test-Path $dllPath) {
-            Write-Host "  Found DLL, analyzing..." -ForegroundColor Green
-            $assemblyInfo = Get-AssemblyInfo -AssemblyPath $dllPath
-            return $assemblyInfo
+        catch {
+            Write-Warning "  Failed to process BCArtifact for $PackageVersion`: $($_.Exception.Message)"
+            return [PSCustomObject]@{ TargetFramework = 'error'; Version = 'error' }
         }
-        else {
-            Write-Warning "  Microsoft.Dynamics.Nav.CodeAnalysis.dll not found in extracted files"
-            return [PSCustomObject]@{
-                TargetFramework = "not-found"
-                AssemblyVersion = "not-found"
+        finally {
+            if (Test-Path $TempDirectory) {
+                Remove-Item $TempDirectory -Recurse -Force -ErrorAction SilentlyContinue
             }
         }
     }
+
+    # Determine the archive-internal folder and the full entry path for the target DLL
+    $pathInArchive = switch ($PackageType) {
+        'VSIX' { 'extension/bin/Analyzers' }
+        'NuGet' { 'tools/net8.0/any' }
+        default { throw "Unknown asset type: $PackageType" }
+    }
+    $entryPath = "$pathInArchive/Microsoft.Dynamics.Nav.Analyzers.Common.dll"
+    $dllPath = Join-Path $TempDirectory 'Microsoft.Dynamics.Nav.Analyzers.Common.dll'
+
+    try {
+        # HTTP Range Requests: download only the target DLL from the remote archive
+        $rangeScript = Join-Path (Split-Path $PSScriptRoot -Parent) 'shared\Get-RemoteZipEntry.ps1'
+        & $rangeScript -Uri $uri -EntryPath $entryPath -OutputPath $dllPath
+
+        $assemblyInfo = Get-AssemblyInfo -AssemblyPath $dllPath
+        return $assemblyInfo
+    }
     catch {
-        Write-Warning "  Failed to process $version`: $($_.Exception.Message)"
+        Write-Warning "  Failed to process $PackageVersion`: $($_.Exception.Message)"
         return [PSCustomObject]@{
             TargetFramework = "error"
-            AssemblyVersion = "error"
+            Version         = "error"
         }
     }
     finally {
@@ -245,7 +285,7 @@ try {
     
     # Step 2: Get all sources using Get-Sources.ps1
     Write-Host "Retrieving BC DevTools sources..." -ForegroundColor Yellow
-    $sourcesJson = & "$PSScriptRoot\Get-Sources.ps1"
+    $sourcesJson = & "$PSScriptRoot\Get-Sources.ps1" -JsonPath $JsonPath
     $allSources = $sourcesJson | ConvertFrom-Json
     Write-Host "Found $($allSources.Count) total sources from BC DevTools" -ForegroundColor Green
     
@@ -260,6 +300,11 @@ try {
         return
     }
     
+    # Sort by PackageType then by version (descending) for predictable processing order
+    $missingSources = $missingSources | Sort-Object `
+    @{ Expression = { $_.packageType } }, `
+    @{ Expression = { [version](($_.packageVersion -split '-')[0]) }; Descending = $true }
+
     # Limit the number of missing versions to process
     $sourcesToProcess = $missingSources | Select-Object -First $MaxVersions
     
@@ -280,6 +325,7 @@ try {
             packageType     = $source.PackageType
             packageVersion  = $source.PackageVersion
             targetFramework = $assemblyInfo.TargetFramework
+            beta            = [bool]$source.isBeta
         }
        
         $newResults += $newEntry
@@ -291,7 +337,7 @@ try {
     
     # Step 5b: Output the updated sources as JSON (like the original Get-BC-DevTools.ps1)
     Write-Host "Retrieving updated BC DevTools sources with TargetFramework data..." -ForegroundColor Yellow
-    $updatedSourcesJson = & "$PSScriptRoot\Get-Sources.ps1"
+    $updatedSourcesJson = & "$PSScriptRoot\Get-Sources.ps1" -JsonPath $JsonPath
     
     # Emit the JSON to STDOUT for the get-bc-devtools action
     Write-Output $updatedSourcesJson
