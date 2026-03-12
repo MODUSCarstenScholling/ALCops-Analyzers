@@ -160,7 +160,7 @@
     <value>Clear/ClearAll does not reset SingleInstance codeunit state</value>
   </data>
   <data name="ClearCodeunitSingleInstanceMessageFormat" xml:space="preserve">
-    <value>Clear(All) does not affect or change values for global variables in '{0}: Codeunit {1}'.</value>
+    <value>Clear(All) does not affect or change values for global variables in the single instance '{0}: Codeunit {1}'.</value>
   </data>
   <data name="ClearCodeunitSingleInstanceDescription" xml:space="preserve">
     <value>SingleInstance codeunits keep their global (state) variables for the lifetime of the session. Calling Clear() on a SingleInstance codeunit variable, or calling ClearAll() in an object that contains local/global SingleInstance codeunit variables, does not reset the stored global values inside those SingleInstance codeunits.</value>
