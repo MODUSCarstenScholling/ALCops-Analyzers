@@ -37,14 +37,19 @@ namespace ALCops.LinterCop.Test
             _fixture.HasDiagnosticAtAllMarkers(code, DiagnosticIds.BuiltInDateTimeMethod);
         }
 
-        // [Test]
-        // public async Task NoDiagnostic(string testCase)
-        // {
-        //     var code = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(NoDiagnostic), $"{testCase}.al"))
-        //         .ConfigureAwait(false);
+        [Test]
+        [TestCase("VariantDT2Date")]
+        [TestCase("VariantDT2Time")]
+        [TestCase("VariantDate2DMY")]
+        [TestCase("VariantDate2DWY")]
+        [TestCase("VariantFormat")]
+        public async Task NoDiagnostic(string testCase)
+        {
+            var code = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(NoDiagnostic), $"{testCase}.al"))
+                .ConfigureAwait(false);
 
-        //     _fixture.NoDiagnosticAtAllMarkers(code, DiagnosticIds.BuiltInDateTimeMethod);
-        // }
+            _fixture.NoDiagnosticAtAllMarkers(code, DiagnosticIds.BuiltInDateTimeMethod);
+        }
 
         [Test]
         [TestCase("Date2DMY_Day")]

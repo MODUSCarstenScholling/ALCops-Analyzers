@@ -3,6 +3,7 @@ using ALCops.Common.Extensions;
 using ALCops.Common.Reflection;
 using Microsoft.Dynamics.Nav.CodeAnalysis;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Diagnostics;
+using Microsoft.Dynamics.Nav.CodeAnalysis.Symbols;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Syntax;
 
 namespace ALCops.LinterCop.Analyzers;
@@ -32,6 +33,9 @@ public sealed class BuiltInDateTimeMethod : DiagnosticAnalyzer
             return;
 
         if (operation.Syntax is not InvocationExpressionSyntax invocationExpression)
+            return;
+
+        if (IsVariantArgument(operation.Arguments[0]))
             return;
 
         InvocationExpressionSyntax? replacementMethod = GetReplacementMethod(operation.TargetMethod.Name, invocationExpression);
@@ -107,5 +111,20 @@ public sealed class BuiltInDateTimeMethod : DiagnosticAnalyzer
         return SyntaxFactory.InvocationExpression(
             SyntaxFactory.IdentifierName(identifier),
             SyntaxFactory.ArgumentList());
+    }
+
+    private static bool IsVariantArgument(IArgument argument)
+    {
+        IOperation value = argument.Value;
+
+        if (value is IConversionExpression conversion)
+            value = conversion.Operand;
+
+        var navTypeKind =
+            value.Type?.GetNavTypeKindSafe()
+            ?? value.GetSymbol()?.OriginalDefinition.GetTypeSymbol().GetNavTypeKindSafe()
+            ?? EnumProvider.NavTypeKind.None;
+
+        return navTypeKind == EnumProvider.NavTypeKind.Variant;
     }
 }
