@@ -76,6 +76,25 @@ public static class SymbolInterfaceExtensions
 
         return false;
     }
+
+    /// <summary>
+    /// Returns true when the symbol has ObsoleteState = Removed (or Moved, when supported).
+    /// Unlike <see cref="IsObsolete"/>, this intentionally excludes the Pending state
+    /// because pending symbols still participate in runtime operations such as TransferFields.
+    /// </summary>
+    public static bool IsRemoved(this ISymbol symbol)
+    {
+        if (symbol.IsObsoleteRemoved)
+        {
+            return true;
+        }
+
+        if (GetObsoletePropertyValue(symbol, _isObsoleteMovedProperty.Value))
+        {
+            return true;
+        }
+        return false;
+    }
     #endregion
 
 #if NETSTANDARD2_1

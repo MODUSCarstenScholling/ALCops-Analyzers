@@ -50,19 +50,22 @@ namespace ALCops.PlatformCop.Test
 
         [Test]
         [TestCase("BuiltInInvocation")]
+        [TestCase("Invocation_ObsoleteStateRemoved")]
         [TestCase("Invocation_Pragma")]
         [TestCase("InvocationCodeToText")]
         [TestCase("InvocationSkipFieldsNotMatchingType")]
         [TestCase("InvocationWithInitPrimaryKeyFieldsIsFalse")]
         [TestCase("InvocationWithType")]
         [TestCase("InvocationWithTypeLength")]
+        [TestCase("TableExt_BothObsoleteStateRemoved")]
+        [TestCase("TableExt_ObsoleteStateRemoved")]
         [TestCase("TableExt_Paired_Extension_Pragma")]
         [TestCase("TableExt_Paired_SingleTableExt")]
         [TestCase("TableExt_Unpaired")]
         public async Task NoDiagnostic(string testCase)
         {
             SkipTestIfVersionIsTooLow(
-                ["TableExt_Paired_Extension_Pragma", "TableExt_Paired_SingleTableExt", "TableExt_Unpaired"],
+                ["TableExt_BothObsoleteStateRemoved", "TableExt_ObsoleteStateRemoved", "TableExt_Paired_Extension_Pragma", "TableExt_Paired_SingleTableExt", "TableExt_Unpaired"],
                 testCase,
                 "13.0",
                 "No support for tableextensions when target itself is already declared in the same module");

@@ -338,6 +338,9 @@ public sealed class TransferFieldsSchemaCompatibility : DiagnosticAnalyzer
             if (id == 0 || id >= 2_000_000_000)
                 continue;
 
+            if (field.IsRemoved())
+                continue;
+
             if (!pkFields.IsDefaultOrEmpty &&
                 pkFields.Any(pk => pk.Id == id))
                 continue;
@@ -362,6 +365,9 @@ public sealed class TransferFieldsSchemaCompatibility : DiagnosticAnalyzer
         foreach (var field in fields)
         {
             if (field.FieldClass != EnumProvider.FieldClassKind.Normal)
+                continue;
+
+            if (field.IsRemoved())
                 continue;
 
             var id = field.Id;
