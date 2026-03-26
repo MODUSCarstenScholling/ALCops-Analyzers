@@ -35,6 +35,9 @@ public sealed class CaptionRequired : DiagnosticAnalyzer
         if (context.IsObsolete())
             return;
 
+        if (IsInApiPage(context))
+            return;
+
         if (context.Symbol.Kind == EnumProvider.SymbolKind.Control)
         {
             var Control = (IControlSymbol)context.Symbol;
@@ -49,8 +52,7 @@ public sealed class CaptionRequired : DiagnosticAnalyzer
                         }
                         else
                         {
-                            if (!SuppressCaptionWarning(context))
-                                RaiseDiagnostic(context);
+                            RaiseDiagnostic(context);
                         }
                     break;
 
@@ -67,8 +69,7 @@ public sealed class CaptionRequired : DiagnosticAnalyzer
                     if (CaptionIsMissing(context.Symbol, context))
                         if (Control.RelatedPartSymbol is not null)
                             if (CaptionIsMissing(Control.RelatedPartSymbol, context))
-                                if (!SuppressCaptionWarning(context))
-                                    RaiseDiagnostic(context);
+                                RaiseDiagnostic(context);
                     break;
 
                 case var _ when Control.ControlKind == EnumProvider.ControlKind.UserControl:
@@ -134,9 +135,8 @@ public sealed class CaptionRequired : DiagnosticAnalyzer
         }
         else if (context.Symbol.Kind == EnumProvider.SymbolKind.Page)
         {
-            if (((IPageTypeSymbol)context.Symbol).PageType != PageTypeKind.API)
-                if (CaptionIsMissing(context.Symbol, context))
-                    RaiseDiagnostic(context);
+            if (CaptionIsMissing(context.Symbol, context))
+                RaiseDiagnostic(context);
         }
         else if (context.Symbol.Kind == EnumProvider.SymbolKind.PermissionSet)
         {
@@ -172,16 +172,16 @@ public sealed class CaptionRequired : DiagnosticAnalyzer
         return false;
     }
 
-    private static bool SuppressCaptionWarning(SymbolAnalysisContext context)
+    private static bool IsInApiPage(SymbolAnalysisContext context)
     {
-        if (context.Symbol.GetContainingObjectTypeSymbol().GetTypeSymbol().GetNavTypeKindSafe() != EnumProvider.NavTypeKind.Page)
+        if (context.Symbol.Kind == EnumProvider.SymbolKind.Page)
+            return ((IPageTypeSymbol)context.Symbol).PageType == EnumProvider.PageTypeKind.API;
+
+        var containingObject = context.Symbol.GetContainingObjectTypeSymbol();
+        if (containingObject is null || containingObject.GetTypeSymbol().GetNavTypeKindSafe() != EnumProvider.NavTypeKind.Page)
             return false;
 
-        IPageTypeSymbol pageTypeSymbol = (IPageTypeSymbol)context.Symbol.GetContainingObjectTypeSymbol();
-        if (pageTypeSymbol.GetNavTypeKindSafe() != EnumProvider.NavTypeKind.Page || pageTypeSymbol.PageType != EnumProvider.PageTypeKind.API)
-            return false;
-
-        return true;
+        return ((IPageTypeSymbol)containingObject).PageType == EnumProvider.PageTypeKind.API;
     }
 
     private void RaiseDiagnostic(SymbolAnalysisContext context)
