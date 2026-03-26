@@ -31,6 +31,7 @@ namespace ALCops.ApplicationCop.Test
         }
 
         [Test]
+        [TestCase("ApiPage")]
         [TestCase("EnumObject")]
         [TestCase("PageObject")]
         [TestCase("TableObject")]
