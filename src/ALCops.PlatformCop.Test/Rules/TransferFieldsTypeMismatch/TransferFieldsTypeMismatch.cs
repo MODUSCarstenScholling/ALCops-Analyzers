@@ -30,6 +30,7 @@ namespace ALCops.PlatformCop.Test
         [TestCase("InvocationWithVarLocalAndGlobal")]
         [TestCase("InvocationWithVarLocals")]
         [TestCase("InvocationWithVarParam")]
+        [TestCase("InvocationWithTableExtension")]
         [TestCase("TableExt_Multiple_SameBase")]
         [TestCase("TableExtension")]
         [TestCase("TableExtensionTypeWithType")]
@@ -37,7 +38,7 @@ namespace ALCops.PlatformCop.Test
         public async Task HasDiagnostic(string testCase)
         {
             SkipTestIfVersionIsTooLow(
-                ["TableExt_Multiple_SameBase", "TableExtension", "TableExtensionTypeWithType", "TableExtensionTypeWithTypeLength"],
+                ["InvocationWithTableExtension", "TableExt_Multiple_SameBase", "TableExtension", "TableExtensionTypeWithType", "TableExtensionTypeWithTypeLength"],
                 testCase,
                 "13.0",
                 "No support for tableextensions when target itself is already declared in the same module");
@@ -55,6 +56,7 @@ namespace ALCops.PlatformCop.Test
         [TestCase("InvocationCodeToText")]
         [TestCase("InvocationSkipFieldsNotMatchingType")]
         [TestCase("InvocationWithInitPrimaryKeyFieldsIsFalse")]
+        [TestCase("InvocationWithTableExtension")]
         [TestCase("InvocationWithType")]
         [TestCase("InvocationWithTypeLength")]
         [TestCase("TableExt_BothObsoleteStateRemoved")]
@@ -65,7 +67,7 @@ namespace ALCops.PlatformCop.Test
         public async Task NoDiagnostic(string testCase)
         {
             SkipTestIfVersionIsTooLow(
-                ["TableExt_BothObsoleteStateRemoved", "TableExt_ObsoleteStateRemoved", "TableExt_Paired_Extension_Pragma", "TableExt_Paired_SingleTableExt", "TableExt_Unpaired"],
+                ["InvocationWithTableExtension", "TableExt_BothObsoleteStateRemoved", "TableExt_ObsoleteStateRemoved", "TableExt_Paired_Extension_Pragma", "TableExt_Paired_SingleTableExt", "TableExt_Unpaired"],
                 testCase,
                 "13.0",
                 "No support for tableextensions when target itself is already declared in the same module");
