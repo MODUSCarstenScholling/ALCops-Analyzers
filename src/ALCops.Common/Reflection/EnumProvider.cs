@@ -650,6 +650,8 @@ public static class EnumProvider
             new(() => ParseEnum<NavCodeAnalysis.NavTypeKind>(nameof(NavCodeAnalysis.NavTypeKind.TableFilter)));
         private static readonly Lazy<NavCodeAnalysis.NavTypeKind> _text =
             new(() => ParseEnum<NavCodeAnalysis.NavTypeKind>(nameof(NavCodeAnalysis.NavTypeKind.Text)));
+        private static readonly Lazy<NavCodeAnalysis.NavTypeKind> _variant =
+            new(() => ParseEnum<NavCodeAnalysis.NavTypeKind>(nameof(NavCodeAnalysis.NavTypeKind.Variant)));
         private static readonly Lazy<NavCodeAnalysis.NavTypeKind> _xmlPort =
             new(() => ParseEnum<NavCodeAnalysis.NavTypeKind>(nameof(NavCodeAnalysis.NavTypeKind.XmlPort)));
 
@@ -678,8 +680,8 @@ public static class EnumProvider
         public static NavCodeAnalysis.NavTypeKind MediaSet => _mediaSet.Value;
         public static NavCodeAnalysis.NavTypeKind None => _none.Value;
         public static NavCodeAnalysis.NavTypeKind Notification => _notification.Value;
-        public static NavCodeAnalysis.NavTypeKind Option => _methodReference.Value;
-        public static NavCodeAnalysis.NavTypeKind MethodReference => _option.Value;
+        public static NavCodeAnalysis.NavTypeKind Option => _option.Value;
+        public static NavCodeAnalysis.NavTypeKind MethodReference => _methodReference.Value;
         public static NavCodeAnalysis.NavTypeKind Page => _page.Value;
         public static NavCodeAnalysis.NavTypeKind PageExtension => _pageExtension.Value;
         public static NavCodeAnalysis.NavTypeKind Query => _query.Value;
@@ -692,6 +694,7 @@ public static class EnumProvider
         public static NavCodeAnalysis.NavTypeKind TableExtension => _tableExtension.Value;
         public static NavCodeAnalysis.NavTypeKind TableFilter => _tableFilter.Value;
         public static NavCodeAnalysis.NavTypeKind Text => _text.Value;
+        public static NavCodeAnalysis.NavTypeKind Variant => _variant.Value;
         public static NavCodeAnalysis.NavTypeKind XmlPort => _xmlPort.Value;
     }
 

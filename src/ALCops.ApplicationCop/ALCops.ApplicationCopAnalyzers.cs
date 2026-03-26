@@ -778,7 +778,7 @@ namespace ALCops.ApplicationCop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The object does not declare permission &quot;{0}&quot; for tabledata &quot;{1}&quot;.
+        ///   Looks up a localized string similar to The object does not declare permission &apos;{0}&apos; for tabledata &apos;{1}&apos;.
         /// </summary>
         internal static string TableDataAccessRequiresPermissionsMessageFormat {
             get {

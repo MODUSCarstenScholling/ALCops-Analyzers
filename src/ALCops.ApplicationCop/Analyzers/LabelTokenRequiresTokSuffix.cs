@@ -65,7 +65,8 @@ public sealed class LabelTokenRequiresTokSuffix : DiagnosticAnalyzer
     private static void Report(SymbolAnalysisContext ctx, IVariableSymbol variable) =>
         ctx.ReportDiagnostic(Diagnostic.Create(
             DiagnosticDescriptors.LabelTokenRequiresTokSuffix,
-            variable.GetLocation()));
+            variable.GetLocation(),
+            variable.Name));
 
     private static ReadOnlySpan<char> GetNameWithoutApprovedSuffix(string name)
     {

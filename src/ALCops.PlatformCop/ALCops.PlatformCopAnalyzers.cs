@@ -184,7 +184,7 @@ namespace ALCops.PlatformCop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Clear(All) does not affect or change values for global variables in &apos;{0}: Codeunit {1}&apos;..
+        ///   Looks up a localized string similar to Clear(All) does not affect or change values for global variables in the single instance &apos;{0}: Codeunit {1}&apos;..
         /// </summary>
         internal static string ClearCodeunitSingleInstanceMessageFormat {
             get {

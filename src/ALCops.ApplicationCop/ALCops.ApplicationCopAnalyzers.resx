@@ -355,7 +355,7 @@
     <value>Table data access requires explicit object permissions</value>
   </data>
   <data name="TableDataAccessRequiresPermissionsMessageFormat" xml:space="preserve">
-    <value>The object does not declare permission "{0}" for tabledata "{1}"</value>
+    <value>The object does not declare permission '{0}' for tabledata '{1}'</value>
   </data>
   <data name="TableDataAccessRequiresPermissionsDescription" xml:space="preserve">
     <value>Code that reads from or writes to table data must declare the required Permissions on the containing object. This ensures the code can run using indirect permissions, which is required when table access is restricted by the user's license. </value>  
