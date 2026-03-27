@@ -37,6 +37,8 @@ namespace ALCops.DocumentationCop.Test
         [TestCase("ProcedureDocumentationCommentWithMultipleAttributes")]
         [TestCase("ProcedureInternal")]
         [TestCase("ProcedureLocal")]
+        [TestCase("TestCodeunit")]
+        [TestCase("TestCodeunitHandlerMethod")]
         public async Task NoDiagnostic(string testCase)
         {
             var code = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(NoDiagnostic), $"{testCase}.al"))
