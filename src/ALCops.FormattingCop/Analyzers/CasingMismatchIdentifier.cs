@@ -664,6 +664,7 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
             { "TestHttpRequestPolicy",  EnumProvider.TestHttpRequestPolicyKind.CanonicalNames },
             { "TestIsolation",          EnumProvider.TestIsolationKind.CanonicalNames },
             { "TestPermissions",        EnumProvider.TestPermissionsKind.CanonicalNames },
+            { "TestType",               EnumProvider.TestTypeKind.CanonicalNames },
             { "TextEncoding",           EnumProvider.TextEncodingKind.CanonicalNames },
             { "TextType",               EnumProvider.TextTypeKind.CanonicalNames },
             { "Type",                   EnumProvider.MergeCanonicalNames(

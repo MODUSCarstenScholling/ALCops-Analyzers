@@ -1187,6 +1187,20 @@ public static class EnumProvider
     }
 
     /// <summary>
+    /// TestTypeKind enum values
+    /// </summary>
+    public static class TestTypeKind
+    {
+#if NETSTANDARD2_1
+        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
+            new Lazy<ImmutableDictionary<string, string>>(() => ImmutableDictionary<string, string>.Empty, LazyThreadSafetyMode.PublicationOnly);
+#else
+        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
+            CreateEnumDictionary<NavCodeAnalysis.TestTypeKind>();
+#endif
+    }
+
+    /// <summary>
     /// TextEncodingKind enum values
     /// </summary>
     public static class TextEncodingKind
