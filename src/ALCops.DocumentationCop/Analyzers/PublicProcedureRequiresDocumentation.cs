@@ -25,8 +25,13 @@ public sealed class PublicProcedureRequiresDocumentation : DiagnosticAnalyzer
         if (ctx.IsObsolete() || ctx.Node is not MethodDeclarationSyntax method)
             return;
 
+        var containingObject = ctx.ContainingSymbol.GetContainingObjectTypeSymbol();
+
         // Rule applies only when the containing object itself is public
-        if (ctx.ContainingSymbol.GetContainingObjectTypeSymbol().DeclaredAccessibility != EnumProvider.Accessibility.Public)
+        if (containingObject.DeclaredAccessibility != EnumProvider.Accessibility.Public)
+            return;
+
+        if (IsTestCodeunit(containingObject))
             return;
 
         var accessibilityToken = method.ProcedureKeyword.GetPreviousToken();
@@ -50,5 +55,11 @@ public sealed class PublicProcedureRequiresDocumentation : DiagnosticAnalyzer
         return trivia.Any(t =>
             t.Kind == EnumProvider.SyntaxKind.SingleLineDocumentationCommentTrivia ||
             t.Kind == EnumProvider.SyntaxKind.MultiLineDocumentationCommentTrivia);
+    }
+
+    private static bool IsTestCodeunit(IObjectTypeSymbol symbol)
+    {
+        var subtype = symbol.GetEnumPropertyValue<CodeunitSubtypeKind>(EnumProvider.PropertyKind.Subtype);
+        return subtype is not null && subtype == EnumProvider.CodeunitSubtypeKind.Test;
     }
 }
