@@ -31,6 +31,7 @@ namespace ALCops.FormattingCop.Test
         [TestCase("OptionDataType")]
         [TestCase("Property")]
         [TestCase("TextConstDataType")]
+        [TestCase("TestType")]
         [TestCase("TriggerDeclaration")]
         public async Task HasDiagnostic(string testCase)
         {
@@ -38,6 +39,12 @@ namespace ALCops.FormattingCop.Test
                 ["Property", "DataType", "TriggerDeclaration"],
                 testCase,
                 "14.0"
+            );
+
+            SkipTestIfVersionIsTooLow(
+                ["TestType"],
+                testCase,
+                "16.0"
             );
 
             var code = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(HasDiagnostic), $"{testCase}.al"))
@@ -59,14 +66,21 @@ namespace ALCops.FormattingCop.Test
         [TestCase("OptionDataType")]
         [TestCase("Property")]
         [TestCase("TextConstDataType")]
+        [TestCase("TestType")]
         [TestCase("TriggerDeclaration")]
         [TestCase("VariableNamedAfterKeyword")]
         public async Task NoDiagnostic(string testCase)
         {
             SkipTestIfVersionIsTooLow(
-                ["Property", "DataType", "TriggerDeclaration"],
+                ["Property", "DataType", "TriggerDeclaration", "TestType"],
                 testCase,
                 "14.0"
+            );
+
+            SkipTestIfVersionIsTooLow(
+                ["TestType"],
+                testCase,
+                "16.0"
             );
 
             var code = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(NoDiagnostic), $"{testCase}.al"))
