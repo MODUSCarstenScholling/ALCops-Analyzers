@@ -418,7 +418,12 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
             CompareAgainstDictionary(ctx, expression.Identifier, _symbolKindDictionary);
 
             if (symbolKindDict.ContainsKey(nameText))
-                CompareAgainstDictionary(ctx, name.Identifier, _symbolKindDictionary);
+            {
+                var memberDict = string.Equals(expressionText, "ObjectType", StringComparison.OrdinalIgnoreCase)
+                    ? _objectTypeMemberDictionary
+                    : _symbolKindDictionary;
+                CompareAgainstDictionary(ctx, name.Identifier, memberDict);
+            }
         }
     }
 
@@ -622,6 +627,11 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
         builder["ObjectType"] = "ObjectType";
         return builder.ToImmutable();
     });
+
+    // ObjectType option members use SymbolKind enum names directly (e.g., XmlPort, not Xmlport).
+    private static readonly Lazy<ImmutableDictionary<string, string>> _objectTypeMemberDictionary = new(() =>
+        Enum.GetNames(typeof(SymbolKind))
+            .ToImmutableDictionary(s => s, s => s, StringComparer.OrdinalIgnoreCase));
 
     // Dynamically discovers canonical enum property values from the SDK's PropertyInfoLookup.
     // Iterates all SymbolKind × PropertyKind combinations and merges options per PropertyKind.
