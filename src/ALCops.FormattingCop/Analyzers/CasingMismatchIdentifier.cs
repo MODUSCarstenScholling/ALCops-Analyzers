@@ -648,9 +648,17 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
 
         PropertyInfo? nameProp = null;
 
+#if NETSTANDARD2_1
+        foreach (var sk in (SymbolKind[])Enum.GetValues(typeof(SymbolKind)))
+#else
         foreach (var sk in Enum.GetValues<SymbolKind>())
+#endif
         {
+#if NETSTANDARD2_1
+            foreach (var pk in (PropertyKind[])Enum.GetValues(typeof(PropertyKind)))
+#else
             foreach (var pk in Enum.GetValues<PropertyKind>())
+#endif
             {
                 try
                 {
