@@ -19,8 +19,12 @@ public sealed class CyclomaticComplexityAndMaintainabilityIndex : DiagnosticAnal
     };
 
     private static readonly HashSet<SyntaxKind> OperatorAndOperandKinds =
+#if NETSTANDARD2_1
         Enum.GetValues(typeof(SyntaxKind))
             .Cast<SyntaxKind>()
+#else
+        Enum.GetValues<SyntaxKind>()
+#endif
             .Where(value => value.ToString().Contains("Keyword") ||
                             value.ToString().Contains("Token") ||
                             IsOperandKind(value))

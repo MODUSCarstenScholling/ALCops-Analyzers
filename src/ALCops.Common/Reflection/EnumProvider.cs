@@ -61,15 +61,11 @@ public static class EnumProvider
         return lazy.Value;
     }
 
-
     /// <summary>
     /// ActionKind enum values
     /// </summary>
     public static class ActionKind
     {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.ActionKind>();
-
         private static readonly Lazy<NavCodeAnalysis.ActionKind> _action =
             new(() => ParseEnum<NavCodeAnalysis.ActionKind>(nameof(NavCodeAnalysis.ActionKind.Action)));
         private static readonly Lazy<NavCodeAnalysis.ActionKind> _actionRef =
@@ -99,9 +95,6 @@ public static class EnumProvider
     /// </summary>
     public static class Accessibility
     {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.Symbols.Accessibility>();
-
         private static readonly Lazy<NavCodeAnalysis.Symbols.Accessibility> _internal =
             new(() => ParseEnum<NavCodeAnalysis.Symbols.Accessibility>(nameof(NavCodeAnalysis.Symbols.Accessibility.Internal)));
         private static readonly Lazy<NavCodeAnalysis.Symbols.Accessibility> _local =
@@ -116,16 +109,6 @@ public static class EnumProvider
         public static NavCodeAnalysis.Symbols.Accessibility Protected => _protected.Value;
         public static NavCodeAnalysis.Symbols.Accessibility Public => _public.Value;
     }
-
-    /// <summary>
-    /// AllowInCustomizationsKind enum values
-    /// </summary>
-    public static class AllowInCustomizationsKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.AllowInCustomizationsKind>();
-    }
-
     /// <summary>
     /// AreaKind enum values
     /// </summary>
@@ -212,9 +195,6 @@ public static class EnumProvider
     /// </summary>
     public static class BinaryOperationKind
     {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.BinaryOperationKind>();
-
         private static readonly Lazy<NavCodeAnalysis.BinaryOperationKind> _booleanConditionalOr =
             new(() => ParseEnum<NavCodeAnalysis.BinaryOperationKind>(nameof(NavCodeAnalysis.BinaryOperationKind.BooleanConditionalOr)));
         private static readonly Lazy<NavCodeAnalysis.BinaryOperationKind> _booleanOr =
@@ -223,24 +203,11 @@ public static class EnumProvider
         public static NavCodeAnalysis.BinaryOperationKind BooleanConditionalOr => _booleanConditionalOr.Value;
         public static NavCodeAnalysis.BinaryOperationKind BooleanOr => _booleanOr.Value;
     }
-
-    /// <summary>
-    /// BlankNumbersKind enum values
-    /// </summary>
-    public static class BlankNumbersKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.BlankNumbersKind>();
-    }
-
     /// <summary>
     /// CodeunitSubtypeKind enum values
     /// </summary>
     public static class CodeunitSubtypeKind
     {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.CodeunitSubtypeKind>();
-
         private static readonly Lazy<NavCodeAnalysis.CodeunitSubtypeKind> _install =
             new(() => ParseEnum<NavCodeAnalysis.CodeunitSubtypeKind>(nameof(NavCodeAnalysis.CodeunitSubtypeKind.Install)));
         private static readonly Lazy<NavCodeAnalysis.CodeunitSubtypeKind> _test =
@@ -252,24 +219,11 @@ public static class EnumProvider
         public static NavCodeAnalysis.CodeunitSubtypeKind Test => _test.Value;
         public static NavCodeAnalysis.CodeunitSubtypeKind Upgrade => _upgrade.Value;
     }
-
-    /// <summary>
-    /// CompressionTypeKind enum values
-    /// </summary>
-    public static class CompressionTypeKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.CompressionTypeKind>();
-    }
-
     /// <summary>
     /// ControlKind enum values
     /// </summary>
     public static class ControlKind
     {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.ControlKind>();
-
         private static readonly Lazy<NavCodeAnalysis.ControlKind> _area =
             new(() => ParseEnum<NavCodeAnalysis.ControlKind>(nameof(NavCodeAnalysis.ControlKind.Area)));
         private static readonly Lazy<NavCodeAnalysis.ControlKind> _field =
@@ -293,113 +247,17 @@ public static class EnumProvider
         public static NavCodeAnalysis.ControlKind SystemPart => _systemPart.Value;
         public static NavCodeAnalysis.ControlKind UserControl => _userControl.Value;
     }
-
-    /// <summary>
-    /// CustomActionTypeKind enum values
-    /// </summary>
-    public static class CustomActionTypeKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.CustomActionTypeKind>();
-    }
-
-    /// <summary>
-    /// CuegroupLayoutKind enum values
-    /// </summary>
-    public static class CuegroupLayoutKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.CuegroupLayoutKind>();
-    }
-
-    /// <summary>
-    /// DataClassificationKind enum values
-    /// </summary>
-    public static class DataClassificationKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.DataClassificationKind>();
-    }
-
-    /// <summary>
-    /// DefaultLayoutKind enum values
-    /// </summary>
-    public static class DefaultLayoutKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.DefaultLayoutKind>();
-    }
-
     /// <summary>
     /// DirectionKind enum values
     /// </summary>
     public static class DirectionKind
     {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.DirectionKind>();
-
 
         private static readonly Lazy<NavCodeAnalysis.DirectionKind> _both =
             new(() => ParseEnum<NavCodeAnalysis.DirectionKind>(nameof(NavCodeAnalysis.DirectionKind.Both)));
 
         public static NavCodeAnalysis.DirectionKind Both => _both.Value;
     }
-
-    /// <summary>
-    /// EncodingKind enum values
-    /// </summary>
-    public static class EncodingKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.EncodingKind>();
-    }
-
-    /// <summary>
-    /// EntitlementRoleTypeKind enum values
-    /// </summary>
-    public static class EntitlementRoleTypeKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.EntitlementRoleTypeKind>();
-    }
-
-    /// <summary>
-    /// EntitlementTypeKind enum values
-    /// </summary>
-    public static class EntitlementTypeKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.EntitlementTypeKind>();
-    }
-
-    /// <summary>
-    /// EventSubscriberInstanceKind enum values
-    /// </summary>
-    public static class EventSubscriberInstanceKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.EventSubscriberInstanceKind>();
-    }
-
-    /// <summary>
-    /// ExtendedDatatypeKind enum values
-    /// </summary>
-    public static class ExtendedDatatypeKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.ExtendedDatatypeKind>();
-    }
-
-    /// <summary>
-    /// ExternalAccessKind enum values
-    /// </summary>
-    public static class ExternalAccessKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.ExternalAccessKind>();
-    }
-
-
     /// <summary>
     /// Feature enum values
     /// </summary>
@@ -426,117 +284,15 @@ public static class EnumProvider
         private static readonly Lazy<NavCodeAnalysis.FieldClassKind> _normal =
             new(() => ParseEnum<NavCodeAnalysis.FieldClassKind>(nameof(NavCodeAnalysis.FieldClassKind.Normal)));
 
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.FieldClassKind>();
-
         public static NavCodeAnalysis.FieldClassKind FlowField => _flowField.Value;
         public static NavCodeAnalysis.FieldClassKind FlowFilter => _flowFilter.Value;
         public static NavCodeAnalysis.FieldClassKind Normal => _normal.Value;
     }
-
-    /// <summary>
-    /// FieldObsoleteStateKind enum values
-    /// </summary>
-    public static class FieldObsoleteStateKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.FieldObsoleteStateKind>();
-    }
-
-    /// <summary>
-    /// FieldSubtypeKind enum values
-    /// </summary>
-    public static class FieldSubtypeKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.FieldSubtypeKind>();
-    }
-
-    /// <summary>
-    /// FieldValidateKind enum values
-    /// </summary>
-    public static class FieldValidateKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.FieldValidateKind>();
-    }
-
-    /// <summary>
-    /// FormatEvaluateKind enum values
-    /// </summary>
-    public static class FormatEvaluateKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.FormatEvaluateKind>();
-    }
-
-    /// <summary>
-    /// FormatKind enum values
-    /// </summary>
-    public static class FormatKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.FormatKind>();
-    }
-
-    /// <summary>
-    /// GestureKind enum values
-    /// </summary>
-    public static class GestureKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.GestureKind>();
-    }
-
-    /// <summary>
-    /// GridLayoutKind enum values
-    /// </summary>
-    public static class GridLayoutKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.GridLayoutKind>();
-    }
-
-    /// <summary>
-    /// ImportanceKind enum values
-    /// </summary>
-    public static class ImportanceKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.ImportanceKind>();
-    }
-
-    /// <summary>
-    /// MaxOccursKind enum values
-    /// </summary>
-    public static class MaxOccursKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.MaxOccursKind>();
-    }
-
-    /// <summary>
-    /// MaskTypeKind enum values
-    /// </summary>
-    public static class MaskTypeKind
-    {
-#if NETSTANDARD2_1
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            new Lazy<ImmutableDictionary<string, string>>(() => ImmutableDictionary<string, string>.Empty, LazyThreadSafetyMode.PublicationOnly);
-#else
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionaryByName("Microsoft.Dynamics.Nav.CodeAnalysis.MaskTypeKind");
-#endif
-    }
-
     /// <summary>
     /// MethodKind enum values
     /// </summary>
     public static class MethodKind
     {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.MethodKind>();
-
         private static readonly Lazy<NavCodeAnalysis.MethodKind> _builtInMethod =
             new(() => ParseEnum<NavCodeAnalysis.MethodKind>(nameof(NavCodeAnalysis.MethodKind.BuiltInMethod)));
         private static readonly Lazy<NavCodeAnalysis.MethodKind> _method =
@@ -545,33 +301,11 @@ public static class EnumProvider
         public static NavCodeAnalysis.MethodKind Method => _method.Value;
         public static NavCodeAnalysis.MethodKind BuiltInMethod => _builtInMethod.Value;
     }
-
-    /// <summary>
-    /// MinOccursKind enum values
-    /// </summary>
-    public static class MinOccursKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.MinOccursKind>();
-    }
-
-    /// <summary>
-    /// MultiplicityKind enum values
-    /// </summary>
-    public static class MultiplicityKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.MultiplicityKind>();
-    }
-
     /// <summary>
     /// NavTypeKind enum values
     /// </summary>
     public static class NavTypeKind
     {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.NavTypeKind>();
-
         private static readonly Lazy<NavCodeAnalysis.NavTypeKind> _action =
             new(() => ParseEnum<NavCodeAnalysis.NavTypeKind>(nameof(NavCodeAnalysis.NavTypeKind.Action)));
         private static readonly Lazy<NavCodeAnalysis.NavTypeKind> _bigInteger =
@@ -698,66 +432,22 @@ public static class EnumProvider
         public static NavCodeAnalysis.NavTypeKind XmlPort => _xmlPort.Value;
     }
 
-
     /// <summary>
     /// OccurrenceKind enum values
     /// </summary>
     public static class ObsoleteStateKind
     {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-        CreateEnumDictionary<NavCodeAnalysis.ObsoleteStateKind>();
-
         private static readonly Lazy<NavCodeAnalysis.ObsoleteStateKind> _no =
             new(() => ParseEnum<NavCodeAnalysis.ObsoleteStateKind>(nameof(NavCodeAnalysis.ObsoleteStateKind.No)));
 
         public static NavCodeAnalysis.ObsoleteStateKind No => _no.Value;
 
     }
-
-    /// <summary>
-    /// OccurrenceKind enum values
-    /// </summary>
-    public static class OccurrenceKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.OccurrenceKind>();
-    }
-
-    /// <summary>
-    /// PaperSourceDefaultPageKind enum values
-    /// </summary>
-    public static class PaperSourceDefaultPageKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.PaperSourceDefaultPageKind>();
-    }
-
-    /// <summary>
-    /// PaperSourceFirstPageKind enum values
-    /// </summary>
-    public static class PaperSourceFirstPageKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.PaperSourceFirstPageKind>();
-    }
-
-    /// <summary>
-    /// PaperSourceLastPageKind enum values
-    /// </summary>
-    public static class PaperSourceLastPageKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.PaperSourceLastPageKind>();
-    }
-
     /// <summary>
     /// OperationKind enum values
     /// </summary>
     public static class OperationKind
     {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.OperationKind>();
-
         private static readonly Lazy<NavCodeAnalysis.OperationKind> _assignmentStatement =
             new(() => ParseEnum<NavCodeAnalysis.OperationKind>(nameof(NavCodeAnalysis.OperationKind.AssignmentStatement)));
         private static readonly Lazy<NavCodeAnalysis.OperationKind> _binaryOperatorExpression =
@@ -808,32 +498,16 @@ public static class EnumProvider
     /// </summary>
     public static class PageActionScopeKind
     {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.PageActionScopeKind>();
-
         private static readonly Lazy<NavCodeAnalysis.PageActionScopeKind> _repeater =
             new(() => ParseEnum<NavCodeAnalysis.PageActionScopeKind>(nameof(NavCodeAnalysis.PageActionScopeKind.Repeater)));
 
         public static NavCodeAnalysis.PageActionScopeKind Repeater => _repeater.Value;
     }
-
-    /// <summary>
-    /// PageDataAccessIntentKind enum values
-    /// </summary>
-    public static class PageDataAccessIntentKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.PageDataAccessIntentKind>();
-    }
-
     /// <summary>
     /// PageTypeKind enum values
     /// </summary>
     public static class PageTypeKind
     {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.PageTypeKind>();
-
         private static readonly Lazy<NavCodeAnalysis.PageTypeKind> _api =
             new(() => ParseEnum<NavCodeAnalysis.PageTypeKind>(nameof(NavCodeAnalysis.PageTypeKind.API)));
         private static readonly Lazy<NavCodeAnalysis.PageTypeKind> _list =
@@ -842,48 +516,6 @@ public static class EnumProvider
         public static NavCodeAnalysis.PageTypeKind API => _api.Value;
         public static NavCodeAnalysis.PageTypeKind List => _list.Value;
     }
-
-    /// <summary>
-    /// PdfFontEmbeddingKind enum values
-    /// </summary>
-    public static class PdfFontEmbeddingKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.PdfFontEmbeddingKind>();
-    }
-
-    /// <summary>
-    /// PreviewModeKind enum values
-    /// </summary>
-    public static class PreviewModeKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.PreviewModeKind>();
-    }
-
-    /// <summary>
-    /// PromotedCategoryKind enum values
-    /// </summary>
-    public static class PromotedCategoryKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.PromotedCategoryKind>();
-    }
-
-    /// <summary>
-    /// PromptModeKind enum values
-    /// </summary>
-    public static class PromptModeKind
-    {
-#if NETSTANDARD2_1
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            new Lazy<ImmutableDictionary<string, string>>(() => ImmutableDictionary<string, string>.Empty, LazyThreadSafetyMode.PublicationOnly);
-#else
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.PromptModeKind>();
-#endif
-    }
-
     /// <summary>
     /// PropertyKind enum values
     /// </summary>
@@ -959,7 +591,6 @@ public static class EnumProvider
         private static readonly Lazy<NavCodeAnalysis.PropertyKind> _useTemporary =
             new(() => ParseEnum<NavCodeAnalysis.PropertyKind>(nameof(NavCodeAnalysis.PropertyKind.UseTemporary)));
 
-
         public static NavCodeAnalysis.PropertyKind Access => _access.Value;
         public static NavCodeAnalysis.PropertyKind Assignable => _assignable.Value;
         public static NavCodeAnalysis.PropertyKind AllowInCustomizations => _allowInCustomizations.Value;
@@ -1000,9 +631,6 @@ public static class EnumProvider
     /// </summary>
     public static class PermissionObjectKind
     {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.PermissionObjectKind>();
-
         private static readonly Lazy<NavCodeAnalysis.PermissionObjectKind> _codeunit =
             new(() => ParseEnum<NavCodeAnalysis.PermissionObjectKind>(nameof(NavCodeAnalysis.PermissionObjectKind.Codeunit)));
         private static readonly Lazy<NavCodeAnalysis.PermissionObjectKind> _page =
@@ -1027,93 +655,16 @@ public static class EnumProvider
         public static NavCodeAnalysis.PermissionObjectKind TableData => _tableData.Value;
         public static NavCodeAnalysis.PermissionObjectKind Xmlport => _xmlport.Value;
     }
-
-    /// <summary>
-    /// QueryColumnMethodKind enum values
-    /// </summary>
-    public static class QueryColumnMethodKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.QueryColumnMethodKind>();
-    }
-
-    /// <summary>
-    /// QueryDataAccessIntentKind enum values
-    /// </summary>
-    public static class QueryDataAccessIntentKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.QueryDataAccessIntentKind>();
-    }
-
-    /// <summary>
-    /// QueryTypeKind enum values
-    /// </summary>
-    public static class QueryTypeKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.QueryTypeKind>();
-    }
-
-    /// <summary>
-    /// ReadStateKind enum values
-    /// </summary>
-    public static class ReadStateKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.ReadStateKind>();
-    }
-
-    /// <summary>
-    /// ReportDataAccessIntentKind enum values
-    /// </summary>
-    public static class ReportDataAccessIntentKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.ReportDataAccessIntentKind>();
-    }
-
-    /// <summary>
-    /// RunPageModeKind enum values
-    /// </summary>
-    public static class RunPageModeKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.RunPageModeKind>();
-    }
-
     /// <summary>
     /// ShowAsKind enum values
     /// </summary>
     public static class ShowAsKind
     {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.ShowAsKind>();
-
         private static readonly Lazy<NavCodeAnalysis.ShowAsKind> _splitButton =
             new(() => ParseEnum<NavCodeAnalysis.ShowAsKind>(nameof(NavCodeAnalysis.ShowAsKind.SplitButton)));
 
         public static NavCodeAnalysis.ShowAsKind SplitButton => _splitButton.Value;
     }
-
-    /// <summary>
-    /// SqlDataTypeKind enum values
-    /// </summary>
-    public static class SqlDataTypeKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.SqlDataTypeKind>();
-    }
-
-    /// <summary>
-    /// SqlJoinTypeKind enum values
-    /// </summary>
-    public static class SqlJoinTypeKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.SqlJoinTypeKind>();
-    }
-
     /// <summary>
     /// StyleKind enum values
     /// </summary>
@@ -1122,24 +673,11 @@ public static class EnumProvider
         public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
             CreateEnumDictionary<NavCodeAnalysis.StyleKind>();
     }
-
-    /// <summary>
-    /// TableScopeKind enum values
-    /// </summary>
-    public static class TableScopeKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.TableScopeKind>();
-    }
-
     /// <summary>
     /// TableTypeKind enum values
     /// </summary>
     public static class TableTypeKind
     {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.TableTypeKind>();
-
         private static readonly Lazy<NavCodeAnalysis.TableTypeKind> _cds =
             new(() => ParseEnum<NavCodeAnalysis.TableTypeKind>(nameof(NavCodeAnalysis.TableTypeKind.CDS)));
         private static readonly Lazy<NavCodeAnalysis.TableTypeKind> _normal =
@@ -1148,152 +686,25 @@ public static class EnumProvider
         private static readonly Lazy<NavCodeAnalysis.TableTypeKind> _temporary =
             new(() => ParseEnum<NavCodeAnalysis.TableTypeKind>(nameof(NavCodeAnalysis.TableTypeKind.Temporary)));
 
-
         public static NavCodeAnalysis.TableTypeKind CDS => _cds.Value;
         public static NavCodeAnalysis.TableTypeKind Normal => _normal.Value;
         public static NavCodeAnalysis.TableTypeKind Temporary => _temporary.Value;
     }
-
-    /// <summary>
-    /// TestHttpRequestPolicyKind enum values
-    /// </summary>
-    public static class TestHttpRequestPolicyKind
-    {
-#if NETSTANDARD2_1
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            new Lazy<ImmutableDictionary<string, string>>(() => ImmutableDictionary<string, string>.Empty, LazyThreadSafetyMode.PublicationOnly);
-#else
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.TestHttpRequestPolicyKind>();
-#endif
-    }
-
-    /// <summary>
-    /// TestIsolationKind enum values
-    /// </summary>
-    public static class TestIsolationKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.TestIsolationKind>();
-    }
-
-    /// <summary>
-    /// TestPermissionsKind enum values
-    /// </summary>
-    public static class TestPermissionsKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.TestPermissionsKind>();
-    }
-
-    /// <summary>
-    /// TestTypeKind enum values
-    /// </summary>
-    public static class TestTypeKind
-    {
-#if NETSTANDARD2_1
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            new Lazy<ImmutableDictionary<string, string>>(() => ImmutableDictionary<string, string>.Empty, LazyThreadSafetyMode.PublicationOnly);
-#else
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.TestTypeKind>();
-#endif
-    }
-
-    /// <summary>
-    /// TextEncodingKind enum values
-    /// </summary>
-    public static class TextEncodingKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.TextEncodingKind>();
-    }
-
-    /// <summary>
-    /// TextTypeKind enum values
-    /// </summary>
-    public static class TextTypeKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.TextTypeKind>();
-    }
-
-    /// <summary>
-    /// TypeKind enum values
-    /// </summary>
-    public static class TypeKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.TypeKind>();
-    }
-
-    /// <summary>
-    /// TransactionTypeKind enum values
-    /// </summary>
-    public static class TransactionTypeKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.TransactionTypeKind>();
-    }
-
-    /// <summary>
-    /// TreeInitialStateKind enum values
-    /// </summary>
-    public static class TreeInitialStateKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.TreeInitialStateKind>();
-    }
-
-    /// <summary>
-    /// UpdatePropagationKind enum values
-    /// </summary>
-    public static class UpdatePropagationKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.UpdatePropagationKind>();
-    }
-
-    /// <summary>
-    /// UsageCategoryKind enum values
-    /// </summary>
-    public static class UsageCategoryKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.UsageCategoryKind>();
-    }
-
     /// <summary>
     /// XmlPortSourceTypeKind enum values
     /// </summary>
     public static class XmlPortSourceTypeKind
     {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.XmlPortSourceTypeKind>();
-
         private static readonly Lazy<NavCodeAnalysis.XmlPortSourceTypeKind> _table =
             new(() => ParseEnum<NavCodeAnalysis.XmlPortSourceTypeKind>(nameof(NavCodeAnalysis.XmlPortSourceTypeKind.Table)));
 
         public static NavCodeAnalysis.XmlPortSourceTypeKind Table => _table.Value;
     }
-
-    /// <summary>
-    /// XmlVersionNoKind enum values
-    /// </summary>
-    public static class XmlVersionNoKind
-    {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.XmlVersionNoKind>();
-    }
-
     /// <summary>
     /// SymbolKind enum values
     /// </summary>
     public static class SymbolKind
     {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.SymbolKind>();
-
         private static readonly Lazy<NavCodeAnalysis.SymbolKind> _action =
             new(() => ParseEnum<NavCodeAnalysis.SymbolKind>(nameof(NavCodeAnalysis.SymbolKind.Action)));
         private static readonly Lazy<NavCodeAnalysis.SymbolKind> _class =
@@ -1392,9 +803,6 @@ public static class EnumProvider
     /// </summary>
     public static class SyntaxKind
     {
-        public static readonly Lazy<ImmutableDictionary<string, string>> CanonicalNames =
-            CreateEnumDictionary<NavCodeAnalysis.SyntaxKind>();
-
         private static readonly Lazy<NavCodeAnalysis.SyntaxKind> _arrayIndexExpression =
             new(() => ParseEnum<NavCodeAnalysis.SyntaxKind>(nameof(NavCodeAnalysis.SyntaxKind.ArrayIndexExpression)));
         private static readonly Lazy<NavCodeAnalysis.SyntaxKind> _assignmentStatement =
@@ -1841,23 +1249,6 @@ public static class EnumProvider
 
     #region Helper Methods
 
-    public static Lazy<ImmutableDictionary<string, string>> MergeCanonicalNames(
-        params Lazy<ImmutableDictionary<string, string>>[] sources)
-    {
-        return new Lazy<ImmutableDictionary<string, string>>(() =>
-        {
-            var builder = ImmutableDictionary.CreateBuilder<string, string>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var src in sources)
-            {
-                foreach (var kv in src.Value)
-                    builder[kv.Key] = kv.Value; // last wins (they are identical key/value anyway)
-            }
-
-            return builder.ToImmutable();
-        }, LazyThreadSafetyMode.PublicationOnly);
-    }
-
     private static Lazy<ImmutableDictionary<string, string>> CreateEnumDictionary<TEnum>()
         where TEnum : struct, Enum
     {
@@ -1867,30 +1258,6 @@ public static class EnumProvider
                     name => name,
                     name => name,
                     StringComparer.OrdinalIgnoreCase));
-    }
-
-    /// <summary>
-    /// Creates an enum dictionary by type name using runtime reflection.
-    /// Use this for enum types that may not exist in all versions of dependencies.
-    /// </summary>
-    private static Lazy<ImmutableDictionary<string, string>> CreateEnumDictionaryByName(string typeName)
-    {
-        return new Lazy<ImmutableDictionary<string, string>>(() =>
-        {
-            var type = AppDomain.CurrentDomain.GetAssemblies()
-                .Select(a => a.GetType(typeName))
-                .FirstOrDefault(t => t != null);
-
-            if (type == null || !type.IsEnum)
-                return ImmutableDictionary<string, string>.Empty;
-
-            var builder = ImmutableDictionary.CreateBuilder<string, string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var name in Enum.GetNames(type))
-            {
-                builder[name] = name;
-            }
-            return builder.ToImmutable();
-        }, LazyThreadSafetyMode.PublicationOnly);
     }
 
     #endregion
