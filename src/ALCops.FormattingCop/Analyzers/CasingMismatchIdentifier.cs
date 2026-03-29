@@ -272,6 +272,13 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
             FieldListSyntax fldList => fldList.Fields.Count == 0,
             FieldExtensionListSyntax fldExtList => fldExtList.Fields.Count == 0,
             KeyListSyntax keyList => keyList.Keys.Count == 0,
+            PageActionListSyntax pageActList => pageActList.Areas.Count == 0,
+            PageActionAreaSyntax pageActArea => pageActArea.Actions.Count == 0,
+            PageExtensionActionListSyntax pageExtActList => pageExtActList.Changes.Count == 0,
+            PageViewListSyntax pageViewList => pageViewList.Views.Count == 0,
+            PageExtensionViewListSyntax pageExtViewList => pageExtViewList.Changes.Count == 0,
+            ParameterListSyntax paramList => paramList.Parameters.Count == 0,
+            PropertyListSyntax propList => propList.Properties.Count == 0,
             _ => false
         };
 
