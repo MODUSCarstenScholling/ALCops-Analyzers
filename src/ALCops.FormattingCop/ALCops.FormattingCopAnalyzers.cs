@@ -76,15 +76,6 @@ namespace ALCops.FormattingCop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to {0} Help improving this rule and open a GitHub issue, pretty please? :-).
-        /// </summary>
-        internal static string CasingMismatchImproveDiagnosticMessageFormat {
-            get {
-                return ResourceManager.GetString("CasingMismatchImproveDiagnosticMessageFormat", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Use &apos;{0}&apos; instead of &apos;{1}&apos; for consistent casing..
         /// </summary>
         internal static string CasingMismatchMessageFormat {

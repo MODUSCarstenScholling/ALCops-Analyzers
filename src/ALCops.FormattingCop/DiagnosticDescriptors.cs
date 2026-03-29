@@ -16,16 +16,6 @@ public static class DiagnosticDescriptors
         description: FormattingCopAnalyzers.CasingMismatchDescription,
         helpLinkUri: GetHelpUri(DiagnosticIds.CasingMismatch));
 
-    public static readonly DiagnosticDescriptor CasingMismatchImproveDiagnostic = new(
-        id: DiagnosticIds.CasingMismatchImproveDiagnostic,
-        title: FormattingCopAnalyzers.CasingMismatchTitle,
-        messageFormat: FormattingCopAnalyzers.CasingMismatchImproveDiagnosticMessageFormat,
-        category: Category.Design,
-        defaultSeverity: DiagnosticSeverity.Info,
-        isEnabledByDefault: true,
-        description: FormattingCopAnalyzers.CasingMismatchDescription,
-        helpLinkUri: GetHelpUri(DiagnosticIds.CasingMismatchImproveDiagnostic));
-
     public static readonly DiagnosticDescriptor SemicolonAfterMethodOrTriggerDeclaration = new(
         id: DiagnosticIds.SemicolonAfterMethodOrTriggerDeclaration,
         title: FormattingCopAnalyzers.SemicolonAfterMethodOrTriggerDeclarationTitle,

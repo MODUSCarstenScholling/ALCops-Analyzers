@@ -1,10 +1,10 @@
+using System.Collections;
 using System.Collections.Immutable;
-using ALCops.Common.Extensions;
+using System.Reflection;
 using ALCops.Common.Reflection;
 using Microsoft.Dynamics.Nav.CodeAnalysis;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Diagnostics;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Syntax;
-using Microsoft.Dynamics.Nav.CodeAnalysis.Text;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Utilities;
 
 namespace ALCops.FormattingCop.Analyzers;
@@ -13,9 +13,7 @@ namespace ALCops.FormattingCop.Analyzers;
 public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
 {
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
-        ImmutableArray.Create(
-            DiagnosticDescriptors.CasingMismatch,
-            DiagnosticDescriptors.CasingMismatchImproveDiagnostic);
+        ImmutableArray.Create(DiagnosticDescriptors.CasingMismatch);
 
     public override void Initialize(AnalysisContext context) =>
         context.RegisterSymbolAction(
@@ -38,21 +36,10 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
                 EnumProvider.SymbolKind.TableExtension,
                 EnumProvider.SymbolKind.XmlPort);
 
-    // All AL keyword texts (e.g., "continue", "if", "begin") for skipping identifiers named after keywords.
-    // Built using the same Enum.GetNames pattern as DataTypeSyntaxKinds in CasingMismatchKeyword.
-    private static readonly Lazy<HashSet<string>> KeywordTexts = new(() =>
-        Enum.GetNames(typeof(SyntaxKind))
-            .Where(name => name.AsSpan().EndsWith("Keyword"))
-            .Select(name => Enum.Parse<SyntaxKind>(name))
-            .Select(SyntaxFactory.Token)
-            .Where(token => token.Kind != SyntaxKind.None)
-            .Select(token => token.ValueText)
-            .Where(text => !string.IsNullOrEmpty(text))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase)!,
-        LazyThreadSafetyMode.PublicationOnly);
-
-    #region Declaration Analysis
-
+    /// <summary>
+    /// Entry point: walks the syntax tree for one AL object declaration, collects nodes
+    /// that need batched semantic resolution, then resolves them.
+    /// </summary>
     private void AnalyzeDeclarations(SymbolAnalysisContext ctx)
     {
         var root = ctx.Symbol.DeclaringSyntaxReference?.GetSyntax(ctx.CancellationToken);
@@ -64,19 +51,22 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
         var qualifiedNames = new List<QualifiedNameSyntax>();
         var triggers = new List<TriggerDeclarationSyntax>();
 
-        WalkNode(ctx, root, identifiers, qualifiedNames, triggers);
+        WalkNode(ctx, semanticModel, root, identifiers, qualifiedNames, triggers);
 
         ResolveIdentifiers(ctx, semanticModel, identifiers);
         ResolveQualifiedNames(ctx, semanticModel, qualifiedNames);
         ResolveTriggers(ctx, semanticModel, triggers);
     }
 
+    #region Tree Walk
+
     /// <summary>
-    /// Recursively walks the syntax tree, handling dictionary-resolvable cases inline
-    /// and collecting nodes that require semantic model resolution for batch processing.
+    /// Recursively walks the syntax tree, handling dictionary-resolvable and symbol-resolvable
+    /// cases inline and collecting nodes that require batched semantic resolution.
     /// </summary>
-    private void WalkNode(
+    private static void WalkNode(
         SymbolAnalysisContext ctx,
+        SemanticModel semanticModel,
         SyntaxNode node,
         List<IdentifierNameSyntax> identifiers,
         List<QualifiedNameSyntax> qualifiedNames,
@@ -108,21 +98,21 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
                 CompareAgainstDictionary(ctx, dataType.TypeName, _navTypeKindDictionary);
                 if (kind == EnumProvider.SyntaxKind.EnumDataType ||
                     kind == EnumProvider.SyntaxKind.LabelDataType)
-                    WalkNode(ctx, child, identifiers, qualifiedNames, triggers);
+                    WalkNode(ctx, semanticModel, child, identifiers, qualifiedNames, triggers);
                 continue;
             }
 
-            // --- Properties: name + value dictionaries ---
+            // --- Properties: semantic model for name, dictionary for value ---
 
             if (child is PropertySyntax prop)
             {
-                HandleProperty(ctx, prop, identifiers, qualifiedNames, triggers);
+                HandleProperty(ctx, semanticModel, prop, identifiers, qualifiedNames, triggers);
                 continue;
             }
 
             if (child is PropertyNameSyntax propName)
             {
-                CompareAgainstDictionary(ctx, propName.Identifier, EnumProvider.PropertyKind.CanonicalNames);
+                ResolvePropertyName(ctx, semanticModel, propName);
                 continue;
             }
 
@@ -135,12 +125,12 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
                     if (attrChild is IdentifierNameSyntax attrName)
                         CompareAgainstDictionary(ctx, attrName.Identifier, EnumProvider.AttributeKind.CanonicalNames);
                     else
-                        WalkNode(ctx, attrChild, identifiers, qualifiedNames, triggers);
+                        WalkNode(ctx, semanticModel, attrChild, identifiers, qualifiedNames, triggers);
                 }
                 continue;
             }
 
-            // --- Caption sub-properties: LabelProperty dictionary ---
+            // --- Label sub-properties (Comment, Locked, MaxLength) ---
 
             if (child is IdentifierEqualsLiteralSyntax idEqualsLit)
             {
@@ -148,23 +138,23 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
                 continue;
             }
 
-            // --- Areas: AreaKind / ActionAreaKind dictionaries ---
+            // --- Page areas: AreaKind / ActionAreaKind dictionaries ---
 
             if (kind == EnumProvider.SyntaxKind.PageArea)
             {
                 AnalyzeChildNodeIdentifiers(ctx, child, EnumProvider.AreaKind.CanonicalNames);
-                WalkNode(ctx, child, identifiers, qualifiedNames, triggers);
+                WalkNode(ctx, semanticModel, child, identifiers, qualifiedNames, triggers);
                 continue;
             }
 
             if (kind == EnumProvider.SyntaxKind.PageActionArea)
             {
                 AnalyzeChildNodeIdentifiers(ctx, child, EnumProvider.ActionAreaKind.CanonicalNames);
-                WalkNode(ctx, child, identifiers, qualifiedNames, triggers);
+                WalkNode(ctx, semanticModel, child, identifiers, qualifiedNames, triggers);
                 continue;
             }
 
-            // --- OptionAccess: SymbolKind dictionary ---
+            // --- Option access: SymbolKind dictionary (e.g., ObjectType::Table) ---
 
             if (child is OptionAccessExpressionSyntax optAccess)
             {
@@ -172,12 +162,12 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
                 continue;
             }
 
-            // --- Nodes collected for semantic batch resolution ---
+            // --- Nodes collected for batched semantic resolution ---
 
             if (child is TriggerDeclarationSyntax trigger)
             {
                 triggers.Add(trigger);
-                WalkNode(ctx, child, identifiers, qualifiedNames, triggers, skipChildIdentifiers: true);
+                WalkNode(ctx, semanticModel, child, identifiers, qualifiedNames, triggers, skipChildIdentifiers: true);
                 continue;
             }
 
@@ -194,25 +184,25 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
                 var children = child.ChildNodes().ToArray();
                 int start = (children.Length > 0 && children[0] is IdentifierNameSyntax) ? 1 : 0;
                 for (int i = start; i < children.Length; i++)
-                    ProcessNode(ctx, children[i], identifiers, qualifiedNames, triggers);
+                    ProcessNode(ctx, semanticModel, children[i], identifiers, qualifiedNames, triggers);
                 continue;
             }
 
             if (child is KeySyntax keySyntax)
             {
                 foreach (var field in keySyntax.Fields)
-                    ProcessNode(ctx, field, identifiers, qualifiedNames, triggers);
+                    ProcessNode(ctx, semanticModel, field, identifiers, qualifiedNames, triggers);
                 continue;
             }
 
             if (kind == EnumProvider.SyntaxKind.ObjectNameReference)
             {
                 if (child.Parent?.Kind != EnumProvider.SyntaxKind.Interface)
-                    WalkNode(ctx, child, identifiers, qualifiedNames, triggers);
+                    WalkNode(ctx, semanticModel, child, identifiers, qualifiedNames, triggers);
                 continue;
             }
 
-            // --- Identifiers: collect for semantic resolution ---
+            // --- Identifiers: collect for batched semantic resolution ---
 
             if (child is IdentifierNameSyntax idName)
             {
@@ -227,64 +217,16 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
                 continue;
 
             bool skipIds = _skipIdentifierParentKinds.Contains(kind);
-            WalkNode(ctx, child, identifiers, qualifiedNames, triggers, skipIds);
-        }
-    }
-
-    private void HandleProperty(
-        SymbolAnalysisContext ctx,
-        PropertySyntax prop,
-        List<IdentifierNameSyntax> identifiers,
-        List<QualifiedNameSyntax> qualifiedNames,
-        List<TriggerDeclarationSyntax> triggers)
-    {
-        CompareAgainstDictionary(ctx, prop.Name.Identifier, EnumProvider.PropertyKind.CanonicalNames);
-
-        switch (prop.Value)
-        {
-            case EnumPropertyValueSyntax enumVal:
-                var propName = prop.Name.Identifier.ValueText;
-                if (!string.IsNullOrEmpty(propName))
-                {
-                    if (_propertyValueDictionaries.Value.TryGetValue(propName, out var dict))
-                        CompareAgainstDictionary(ctx, enumVal.Value.Identifier, dict);
-#if DEBUG
-                    else
-                        RaiseImproveRuleDiagnostic(ctx, prop.Value, $"Missing '{propName}' ordinals.");
-#endif
-                }
-                break;
-
-            case CommaSeparatedPropertyValueSyntax when
-                 string.Equals(prop.Name.Identifier.ValueText, "ApplicationArea", StringComparison.OrdinalIgnoreCase):
-                break;
-
-            case CommaSeparatedIdentifierOrLiteralPropertyValueSyntax when
-                 string.Equals(prop.Name.Identifier.ValueText, "ValuesAllowed", StringComparison.OrdinalIgnoreCase):
-                break;
-
-            case ImagePropertyValueSyntax:
-            case StringPropertyValueSyntax:
-            case OptionValuePropertyValueSyntax:
-            case OptionValuesPropertyValueSyntax:
-                break;
-
-            default:
-                foreach (var propChild in prop.ChildNodes())
-                {
-                    if (propChild is not PropertyNameSyntax)
-                        WalkNode(ctx, propChild, identifiers, qualifiedNames, triggers);
-                }
-                break;
+            WalkNode(ctx, semanticModel, child, identifiers, qualifiedNames, triggers, skipIds);
         }
     }
 
     /// <summary>
     /// Processes a single node that may be a leaf (IdentifierName, QualifiedName) or a subtree.
-    /// Unlike WalkNode which walks children, this also handles the node itself.
     /// </summary>
-    private void ProcessNode(
+    private static void ProcessNode(
         SymbolAnalysisContext ctx,
+        SemanticModel semanticModel,
         SyntaxNode node,
         List<IdentifierNameSyntax> identifiers,
         List<QualifiedNameSyntax> qualifiedNames,
@@ -301,7 +243,7 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
         }
         else
         {
-            WalkNode(ctx, node, identifiers, qualifiedNames, triggers);
+            WalkNode(ctx, semanticModel, node, identifiers, qualifiedNames, triggers);
         }
     }
 
@@ -318,6 +260,112 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
             return false;
 
         return true;
+    }
+
+    private static bool IsEmptyList(SyntaxNode node) =>
+        node switch
+        {
+            ArgumentListSyntax argList => argList.Arguments.Count == 0,
+            AttributeArgumentListSyntax attrList => attrList.Arguments.Count == 0,
+            FieldGroupListSyntax fldGrpList => fldGrpList.FieldGroups.Count == 0,
+            FieldGroupExtensionListSyntax fldGrpExtList => fldGrpExtList.Changes.Count == 0,
+            FieldListSyntax fldList => fldList.Fields.Count == 0,
+            FieldExtensionListSyntax fldExtList => fldExtList.Fields.Count == 0,
+            KeyListSyntax keyList => keyList.Keys.Count == 0,
+            _ => false
+        };
+
+    #endregion
+
+    #region Inline Resolution
+
+    /// <summary>
+    /// Handles property syntax: resolves the property name via semantic model,
+    /// and the property value via PropertyKind-targeted dictionary lookup.
+    /// </summary>
+    private static void HandleProperty(
+        SymbolAnalysisContext ctx,
+        SemanticModel semanticModel,
+        PropertySyntax prop,
+        List<IdentifierNameSyntax> identifiers,
+        List<QualifiedNameSyntax> qualifiedNames,
+        List<TriggerDeclarationSyntax> triggers)
+    {
+        ResolvePropertyName(ctx, semanticModel, prop.Name);
+
+        switch (prop.Value)
+        {
+            case EnumPropertyValueSyntax enumVal:
+                ResolveEnumPropertyValue(ctx, semanticModel, prop, enumVal);
+                break;
+
+            case CommaSeparatedPropertyValueSyntax when
+                 string.Equals(prop.Name.Identifier.ValueText, "ApplicationArea", StringComparison.OrdinalIgnoreCase):
+            case CommaSeparatedIdentifierOrLiteralPropertyValueSyntax when
+                 string.Equals(prop.Name.Identifier.ValueText, "ValuesAllowed", StringComparison.OrdinalIgnoreCase):
+            case ImagePropertyValueSyntax:
+            case StringPropertyValueSyntax:
+            case OptionValuePropertyValueSyntax:
+            case OptionValuesPropertyValueSyntax:
+                break;
+
+            default:
+                foreach (var propChild in prop.ChildNodes())
+                {
+                    if (propChild is not PropertyNameSyntax)
+                        WalkNode(ctx, semanticModel, propChild, identifiers, qualifiedNames, triggers);
+                }
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Resolves property name casing using the semantic model. Falls back to dictionary
+    /// lookup when the semantic model doesn't return a symbol.
+    /// </summary>
+    private static void ResolvePropertyName(SymbolAnalysisContext ctx, SemanticModel semanticModel, PropertyNameSyntax propName)
+    {
+        if (semanticModel.GetSymbolInfo(propName, ctx.CancellationToken).Symbol is IPropertySymbol propSymbol)
+        {
+            CompareIdentifier(ctx, propName.Identifier, propSymbol.PropertyKind.ToString());
+            return;
+        }
+
+        CompareAgainstDictionary(ctx, propName.Identifier, EnumProvider.PropertyKind.CanonicalNames);
+    }
+
+    /// <summary>
+    /// Resolves enum property value casing. Uses GetDeclaredSymbol to get the PropertyKind,
+    /// then looks up the dynamically-discovered canonical names for value comparison.
+    /// </summary>
+    private static void ResolveEnumPropertyValue(
+        SymbolAnalysisContext ctx,
+        SemanticModel semanticModel,
+        PropertySyntax prop,
+        EnumPropertyValueSyntax enumVal)
+    {
+        if (semanticModel.GetDeclaredSymbol(prop, ctx.CancellationToken) is IPropertySymbol propSymbol)
+        {
+            if (_enumPropertyValuesByKind.Value.TryGetValue(propSymbol.PropertyKind, out var dict))
+            {
+                CompareAgainstDictionary(ctx, enumVal.Value.Identifier, dict);
+                return;
+            }
+        }
+
+        // Fallback: parse property name from source text and try all PropertyKind values
+        var propName = prop.Name.Identifier.ValueText;
+        if (string.IsNullOrEmpty(propName))
+            return;
+
+        foreach (var kvp in _enumPropertyValuesByKind.Value)
+        {
+            if (string.Equals(kvp.Key.ToString(), propName, StringComparison.OrdinalIgnoreCase))
+            {
+                CompareAgainstDictionary(ctx, enumVal.Value.Identifier, kvp.Value);
+                return;
+            }
+        }
     }
 
     private static void AnalyzeChildNodeIdentifiers(
@@ -369,7 +417,7 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
 
     #endregion
 
-    #region Semantic Resolution (Phase 2)
+    #region Batched Semantic Resolution
 
     private static void ResolveIdentifiers(
         SymbolAnalysisContext ctx,
@@ -385,20 +433,12 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
         {
             var representative = groupNode.OrderBy(node => node.Position).Last();
 
-            // Skip identifiers named after AL keywords (e.g., "Continue", "Action").
-            // These are user-defined names, not keyword usage — casing is the user's choice.
             if (representative.Identifier.ValueText is string identifierText
                 && KeywordTexts.Value.Contains(identifierText))
                 continue;
 
             if (semanticModel.GetSymbolInfo(representative, ctx.CancellationToken).Symbol is not ISymbol symbol)
-            {
-#if DEBUG
-                var message = $"SymbolInfo not available for '{representative.Identifier.ValueText?.QuoteIdentifierIfNeededWithReflection()}' on IdentifierNameSyntax.";
-                RaiseImproveRuleDiagnostic(ctx, groupNode, message);
-#endif
                 continue;
-            }
 
             foreach (var node in groupNode)
             {
@@ -422,13 +462,7 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
             var symbol = semanticModel.GetSymbolInfo(representative, ctx.CancellationToken).Symbol;
 
             if (symbol is null)
-            {
-#if DEBUG
-                var message = $"SymbolInfo not available for '{representative.ToString().QuoteIdentifierIfNeededWithReflection()}' on QualifiedNameSyntax.";
-                RaiseImproveRuleDiagnostic(ctx, groupNode, message);
-#endif
                 continue;
-            }
 
             foreach (var node in groupNode)
             {
@@ -480,7 +514,7 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
 
     #endregion
 
-    #region Comparators
+    #region Comparison and Reporting
 
     private static void CompareIdentifier(SymbolAnalysisContext ctx, SyntaxToken identifier, string? canonical)
     {
@@ -515,65 +549,46 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
         SyntaxToken identifier,
         Lazy<ImmutableDictionary<string, string>>? lookupDictionary)
     {
+        if (lookupDictionary is null)
+            return;
+
+        CompareAgainstDictionary(ctx, identifier, lookupDictionary.Value);
+    }
+
+    private static void CompareAgainstDictionary(
+        SymbolAnalysisContext ctx,
+        SyntaxToken identifier,
+        ImmutableDictionary<string, string>? lookupDictionary)
+    {
         string? tokenText = identifier.ValueText?.UnquoteIdentifier();
         if (string.IsNullOrEmpty(tokenText))
             return;
 
-        var lookupDict = lookupDictionary?.Value;
-
-        if (lookupDict is null)
-        {
-#if DEBUG
-            RaiseImproveRuleDiagnostic(ctx, identifier, $"Missing ordinals for '{tokenText}'.");
-#endif
+        if (lookupDictionary is null)
             return;
-        }
 
-        if (!lookupDict.TryGetValue(tokenText, out string? canonical))
-        {
-#if DEBUG
-            RaiseImproveRuleDiagnostic(ctx, identifier, $"Redundant analysis of '{tokenText}'.");
-#endif
+        if (!lookupDictionary.TryGetValue(tokenText, out string? canonical))
             return;
-        }
 
         CompareIdentifier(ctx, identifier, canonical);
     }
 
     #endregion
 
-    #region Debug Diagnostics
+    #region Static Data
 
-    private static void RaiseImproveRuleDiagnostic(SymbolAnalysisContext ctx, IEnumerable<SyntaxNode> nodes, string message)
-    {
-        foreach (var node in nodes)
-            RaiseImproveRuleDiagnostic(ctx, node.GetLocation(), message);
-    }
-
-    private static void RaiseImproveRuleDiagnostic(SymbolAnalysisContext ctx, IEnumerable<SyntaxToken> tokens, string message)
-    {
-        foreach (var token in tokens)
-            RaiseImproveRuleDiagnostic(ctx, token.GetLocation(), message);
-    }
-
-    private static void RaiseImproveRuleDiagnostic(SymbolAnalysisContext ctx, SyntaxNode node, string message) =>
-        RaiseImproveRuleDiagnostic(ctx, node.GetLocation(), message);
-
-    private static void RaiseImproveRuleDiagnostic(SymbolAnalysisContext ctx, SyntaxToken token, string message) =>
-        RaiseImproveRuleDiagnostic(ctx, token.GetLocation(), message);
-
-    private static void RaiseImproveRuleDiagnostic(SymbolAnalysisContext ctx, Location location, string message)
-    {
-        ctx.ReportDiagnostic(
-            Diagnostic.Create(
-                DiagnosticDescriptors.CasingMismatchImproveDiagnostic,
-                location,
-                message));
-    }
-
-    #endregion
-
-    #region Dictionaries
+    // All AL keyword texts for filtering out identifiers named after keywords.
+    // User-defined names matching keywords (e.g., a variable called "Action") are the user's choice.
+    private static readonly Lazy<HashSet<string>> KeywordTexts = new(() =>
+        Enum.GetNames(typeof(SyntaxKind))
+            .Where(name => name.AsSpan().EndsWith("Keyword"))
+            .Select(name => Enum.Parse<SyntaxKind>(name))
+            .Select(SyntaxFactory.Token)
+            .Where(token => token.Kind != SyntaxKind.None)
+            .Select(token => token.ValueText)
+            .Where(text => !string.IsNullOrEmpty(text))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase)!,
+        LazyThreadSafetyMode.PublicationOnly);
 
     private static readonly Lazy<ImmutableDictionary<string, string>> _labelPropertyDictionary = new(() =>
         LabelPropertyHelper.GetAllLabelProperties()
@@ -601,88 +616,70 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
         return builder.ToImmutable();
     });
 
-    private static readonly Lazy<Dictionary<string, Lazy<ImmutableDictionary<string, string>>>> _propertyValueDictionaries = new(() =>
-        new Dictionary<string, Lazy<ImmutableDictionary<string, string>>>(StringComparer.OrdinalIgnoreCase)
+    // Dynamically discovers canonical enum property values from the SDK's PropertyInfoLookup.
+    // Iterates all SymbolKind × PropertyKind combinations and merges options per PropertyKind.
+    // Self-maintaining: new enum properties added to the AL SDK are automatically picked up.
+    private static readonly Lazy<Dictionary<PropertyKind, ImmutableDictionary<string, string>>> _enumPropertyValuesByKind = new(() =>
+    {
+        var result = new Dictionary<PropertyKind, ImmutableDictionary<string, string>>();
+
+        var lookupMethod = typeof(PropertyInfoLookup).GetMethod("Lookup", BindingFlags.Public | BindingFlags.Static);
+        if (lookupMethod is null)
+            return result;
+
+        Type[] sdkTypes;
+        try { sdkTypes = typeof(PropertyInfoLookup).Assembly.GetTypes(); }
+        catch (ReflectionTypeLoadException ex) { sdkTypes = ex.Types.Where(t => t != null).ToArray()!; }
+
+        var enumPropTypeInfo = sdkTypes.FirstOrDefault(t => t?.Name == "EnumPropertyTypeInfo");
+        if (enumPropTypeInfo is null)
+            return result;
+
+        var optionsProp = enumPropTypeInfo.GetProperty("Options", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+        if (optionsProp is null)
+            return result;
+
+        PropertyInfo? nameProp = null;
+
+        foreach (var sk in Enum.GetValues<SymbolKind>())
         {
-            { "Access",                 EnumProvider.Accessibility.CanonicalNames },
-            { "AllowInCustomizations",  EnumProvider.AllowInCustomizationsKind.CanonicalNames },
-            { "BlankNumbers",           EnumProvider.BlankNumbersKind.CanonicalNames },
-            { "Caption",                _labelPropertyDictionary },
-            { "CompressionType",        EnumProvider.CompressionTypeKind.CanonicalNames },
-            { "CustomActionType",       EnumProvider.CustomActionTypeKind.CanonicalNames },
-            { "CueGroupLayout",         EnumProvider.CuegroupLayoutKind.CanonicalNames },
-            { "DataAccessIntent",       EnumProvider.MergeCanonicalNames(
-                                            EnumProvider.PageDataAccessIntentKind.CanonicalNames,
-                                            EnumProvider.QueryDataAccessIntentKind.CanonicalNames,
-                                            EnumProvider.ReportDataAccessIntentKind.CanonicalNames) },
-            { "DataClassification",     EnumProvider.DataClassificationKind.CanonicalNames },
-            { "DefaultLayout",          EnumProvider.DefaultLayoutKind.CanonicalNames },
-            { "Direction",              EnumProvider.DirectionKind.CanonicalNames },
-            { "Encoding",               EnumProvider.EncodingKind.CanonicalNames },
-            { "EventSubscriberInstance",EnumProvider.EventSubscriberInstanceKind.CanonicalNames },
-            { "ExtendedDatatype",       EnumProvider.ExtendedDatatypeKind.CanonicalNames },
-            { "ExternalAccess",         EnumProvider.ExternalAccessKind.CanonicalNames },
-            { "FieldClass",             EnumProvider.FieldClassKind.CanonicalNames },
-            { "FieldValidate",          EnumProvider.FieldValidateKind.CanonicalNames },
-            { "Format",                 EnumProvider.FormatKind.CanonicalNames },
-            { "FormatEvaluate",         EnumProvider.FormatEvaluateKind.CanonicalNames },
-            { "Gesture",                EnumProvider.GestureKind.CanonicalNames },
-            { "GridLayout",             EnumProvider.GridLayoutKind.CanonicalNames },
-            { "Importance",             EnumProvider.ImportanceKind.CanonicalNames },
-            { "MaskType",               EnumProvider.MaskTypeKind.CanonicalNames },
-            { "MaxOccurs",              EnumProvider.MaxOccursKind.CanonicalNames },
-            { "Method",                 EnumProvider.QueryColumnMethodKind.CanonicalNames },
-            { "MinOccurs",              EnumProvider.MinOccursKind.CanonicalNames },
-            { "Multiplicity",           EnumProvider.MultiplicityKind.CanonicalNames },
-            { "ObsoleteState",          EnumProvider.MergeCanonicalNames(
-                                            EnumProvider.FieldClassKind.CanonicalNames,
-                                            EnumProvider.FieldObsoleteStateKind.CanonicalNames) },
-            { "Occurrence",             EnumProvider.OccurrenceKind.CanonicalNames },
-            { "PaperSourceDefaultPage", EnumProvider.PaperSourceDefaultPageKind.CanonicalNames },
-            { "PaperSourceFirstPage",   EnumProvider.PaperSourceFirstPageKind.CanonicalNames },
-            { "PaperSourceLastPage",    EnumProvider.PaperSourceLastPageKind.CanonicalNames },
-            { "QueryType",              EnumProvider.QueryTypeKind.CanonicalNames },
-            { "Scope",                  EnumProvider.MergeCanonicalNames(
-                                            EnumProvider.TableScopeKind.CanonicalNames,
-                                            EnumProvider.PageActionScopeKind.CanonicalNames) },
-            { "ShowAs",                 EnumProvider.ShowAsKind.CanonicalNames },
-            { "SqlDataType",            EnumProvider.SqlDataTypeKind.CanonicalNames },
-            { "SqlJoinType",            EnumProvider.SqlJoinTypeKind.CanonicalNames },
-            { "PageType",               EnumProvider.PageTypeKind.CanonicalNames },
-            { "PdfFontEmbedding",       EnumProvider.PdfFontEmbeddingKind.CanonicalNames },
-            { "PreviewMode",            EnumProvider.PreviewModeKind.CanonicalNames },
-            { "PromotedCategory",       EnumProvider.PromotedCategoryKind.CanonicalNames },
-            { "PromptMode",             EnumProvider.PromptModeKind.CanonicalNames },
-            { "ReadState",              EnumProvider.ReadStateKind.CanonicalNames },
-            { "RoleType",               EnumProvider.EntitlementRoleTypeKind.CanonicalNames },
-            { "RunPageMode",            EnumProvider.RunPageModeKind.CanonicalNames },
-            { "Style",                  EnumProvider.StyleKind.CanonicalNames },
-            { "Subtype",                EnumProvider.MergeCanonicalNames(
-                                            EnumProvider.CodeunitSubtypeKind.CanonicalNames,
-                                            EnumProvider.FieldSubtypeKind.CanonicalNames) },
-            { "TableType",              EnumProvider.TableTypeKind.CanonicalNames },
-            { "TestHttpRequestPolicy",  EnumProvider.TestHttpRequestPolicyKind.CanonicalNames },
-            { "TestIsolation",          EnumProvider.TestIsolationKind.CanonicalNames },
-            { "TestPermissions",        EnumProvider.TestPermissionsKind.CanonicalNames },
-            { "TestType",               EnumProvider.TestTypeKind.CanonicalNames },
-            { "TextEncoding",           EnumProvider.TextEncodingKind.CanonicalNames },
-            { "TextType",               EnumProvider.TextTypeKind.CanonicalNames },
-            { "Type",                   EnumProvider.MergeCanonicalNames(
-                                            EnumProvider.TypeKind.CanonicalNames,
-                                            EnumProvider.EntitlementTypeKind.CanonicalNames) },
-            { "TransactionType",        EnumProvider.TransactionTypeKind.CanonicalNames },
-            { "TreeInitialState",       EnumProvider.TreeInitialStateKind.CanonicalNames },
-            { "UpdatePropagation",      EnumProvider.UpdatePropagationKind.CanonicalNames },
-            { "UsageCategory",          EnumProvider.UsageCategoryKind.CanonicalNames },
-            { "XmlVersionNo",           EnumProvider.XmlVersionNoKind.CanonicalNames }
-        });
+            foreach (var pk in Enum.GetValues<PropertyKind>())
+            {
+                try
+                {
+                    var info = lookupMethod.Invoke(null, new object[] { sk, pk });
+                    if (info?.GetType() != enumPropTypeInfo)
+                        continue;
 
-    #endregion
+                    if (optionsProp.GetValue(info) is not IEnumerable options)
+                        continue;
 
-    #region Helpers
+                    if (!result.TryGetValue(pk, out _))
+                        result[pk] = ImmutableDictionary<string, string>.Empty;
 
-    // These parent kinds declare new names — skip their IdentifierName children
-    // to avoid checking user-defined names against the semantic model.
+                    var builder = result[pk].ToBuilder();
+                    builder.KeyComparer = StringComparer.OrdinalIgnoreCase;
+
+                    foreach (var opt in options)
+                    {
+                        nameProp ??= opt.GetType().GetProperty("Name");
+                        if (nameProp?.GetValue(opt) is string name && !builder.ContainsKey(name))
+                            builder[name] = name;
+                    }
+
+                    result[pk] = builder.ToImmutable();
+                }
+                catch
+                {
+                    // Silently skip combinations that fail (version compatibility)
+                }
+            }
+        }
+
+        return result;
+    }, LazyThreadSafetyMode.PublicationOnly);
+
+    // Declaration nodes whose child identifiers should be skipped (user-defined names).
     private static readonly HashSet<SyntaxKind> _skipIdentifierParentKinds = new HashSet<SyntaxKind>
     {
         EnumProvider.SyntaxKind.CodeunitObject,
@@ -717,26 +714,6 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
         EnumProvider.SyntaxKind.TableExtensionObject,
         EnumProvider.SyntaxKind.XmlPortObject
     };
-
-    private static bool IsEmptyList(SyntaxNode node) =>
-        node switch
-        {
-            ArgumentListSyntax argList => argList.Arguments.Count == 0,
-            AttributeArgumentListSyntax attrList => attrList.Arguments.Count == 0,
-            FieldGroupListSyntax fldGrpList => fldGrpList.FieldGroups.Count == 0,
-            FieldGroupExtensionListSyntax fldGrpExtList => fldGrpExtList.Changes.Count == 0,
-            FieldListSyntax fldList => fldList.Fields.Count == 0,
-            FieldExtensionListSyntax fldExtList => fldExtList.Fields.Count == 0,
-            KeyListSyntax keyList => keyList.Keys.Count == 0,
-            PageActionListSyntax pageActList => pageActList.Areas.Count == 0,
-            PageActionAreaSyntax pageActArea => pageActArea.Actions.Count == 0,
-            PageExtensionActionListSyntax pageExtActList => pageExtActList.Changes.Count == 0,
-            PageViewListSyntax pageViewList => pageViewList.Views.Count == 0,
-            PageExtensionViewListSyntax pageExtViewList => pageExtViewList.Changes.Count == 0,
-            ParameterListSyntax paramList => paramList.Parameters.Count == 0,
-            PropertyListSyntax propList => propList.Properties.Count == 0,
-            _ => false
-        };
 
     #endregion
 }
