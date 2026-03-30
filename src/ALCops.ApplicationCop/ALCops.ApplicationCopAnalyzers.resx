@@ -430,7 +430,7 @@
     <value>Reserve Enum value zero (0) for empty value</value>
   </data>
   <data name="ZeroEnumValueReservedForEmptyMessageFormat" xml:space="preserve">
-    <value>Enum '{0}' with value 0 must have an empty Name and Caption.</value>
+    <value>Enum value '{0}' with ordinal 0 should have an empty Name and Caption.</value>
   </data>
   <data name="ZeroEnumValueReservedForEmptyDescription" xml:space="preserve">
     <value>Zero (0) should be reserved as the empty Enum value. Business Central stores Enums as integers and does not support null; new records (and existing records after adding a field via table extension) default to 0, which makes non-empty meaning at 0 ambiguous.</value>
