@@ -994,7 +994,7 @@ namespace ALCops.ApplicationCop {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Enum &apos;{0}&apos; with value 0 must have an empty Name and Caption..
+        ///   Looks up a localized string similar to Enum value &apos;{0}&apos; with ordinal 0 should have an empty Name and Caption..
         /// </summary>
         internal static string ZeroEnumValueReservedForEmptyMessageFormat {
             get {
