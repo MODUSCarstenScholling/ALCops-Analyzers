@@ -52,6 +52,7 @@ public class RecordGetProcedureArguments : NavCodeAnalysisBase
     [TestCase("RecordGetCode10ToCode20")]
     [TestCase("RecordGetDecimalToInteger")]
     [TestCase("RecordGetEnum")]
+    [TestCase("RecordGetEnumFieldAccessCrossTable")]
     [TestCase("RecordGetFieldRecordId")]
     [TestCase("RecordGetGlobalVariable")]
     [TestCase("RecordGetLocalVariable")]

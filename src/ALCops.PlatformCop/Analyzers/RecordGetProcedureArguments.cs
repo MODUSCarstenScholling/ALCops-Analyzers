@@ -161,7 +161,19 @@ public sealed class RecordGetProcedureArguments : DiagnosticAnalyzer
         while (current is IConversionExpression conversion)
             current = conversion.Operand;
 
-        return current is IOptionAccess { Instance: IFieldAccess };
+        if (current is not IOptionAccess { Instance: IFieldAccess fieldAccess })
+            return false;
+
+#if NETSTANDARD2_1
+        var fieldType = fieldAccess.FieldSymbol.OriginalDefinition.GetTypeSymbol();
+#else
+        var fieldType = fieldAccess.FieldSymbol.Type;
+#endif
+
+        if (fieldType is null)
+            return false;
+
+        return fieldType.GetNavTypeKindSafe() == EnumProvider.NavTypeKind.Option;
     }
 
     private static bool IsOptionMemberAccessOnMatchingPrimaryKeyField(IArgument argument, IFieldSymbol primaryKeyField, ITableTypeSymbol table)
