@@ -21,10 +21,12 @@ namespace ALCops.LinterCop.Test
         [Test]
         [TestCase("Label")]
         [TestCase("Page")]
+        [TestCase("IfStatement")]
+        [TestCase("ExitStatement")]
         public async Task HasDiagnostic(string testCase)
         {
             SkipTestIfVersionIsTooLow(
-                ["Label", "Page"],
+                ["Label", "Page", "IfStatement", "ExitStatement"],
                 testCase,
                 "14.0",
                 "No support for PageStyle datatype in versions below 14.0."
@@ -39,13 +41,16 @@ namespace ALCops.LinterCop.Test
         [Test]
         [TestCase("AssignToStyleExpr")]
         [TestCase("AssignToTableField")]
+        [TestCase("AssignToTableFieldLocal")]
+        [TestCase("AssignToTableFieldRec")]
         [TestCase("Enum")]
         [TestCase("Label")]
         [TestCase("Page")]
+        [TestCase("RecordMethodInvocation")]
         public async Task NoDiagnostic(string testCase)
         {
             SkipTestIfVersionIsTooLow(
-                ["AssignToStyleExpr", "AssignToTableField", "Enum", "Label", "Page"],
+                ["AssignToStyleExpr", "AssignToTableField", "AssignToTableFieldLocal", "AssignToTableFieldRec", "Enum", "Label", "Page", "RecordMethodInvocation"],
                 testCase,
                 "14.0",
                 "No support for PageStyle datatype in versions below 14.0."
