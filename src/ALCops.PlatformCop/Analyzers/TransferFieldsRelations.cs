@@ -495,9 +495,19 @@ internal static class TransferFieldsRelations
                 new Version(16, 0),
                 null),
             new TableRelation(
+                new ObjectName("Microsoft.Bank.Payment", "Payment Header FR"),
+                new ObjectName("Microsoft.Bank.Payment", "Payment Header Archive FR"),
+                new Version(28, 0),
+                null),
+            new TableRelation(
                 new ObjectName("Microsoft.Bank.Payment", "Payment Line"),
                 new ObjectName("Microsoft.Bank.Payment", "Payment Line Archive"),
                 new Version(16, 0),
+                null),
+            new TableRelation(
+                new ObjectName("Microsoft.Bank.Payment", "Payment Line FR"),
+                new ObjectName("Microsoft.Bank.Payment", "Payment Line Archive FR"),
+                new Version(28, 0),
                 null),
             new TableRelation(
                 new ObjectName("Microsoft.Bank.Payment", "Ref. Payment - Exported"),
@@ -1343,6 +1353,11 @@ internal static class TransferFieldsRelations
                 new ObjectName("Microsoft.Inventory.Ledger", "Item Application Entry"),
                 new ObjectName("Microsoft.Inventory.Ledger", "Item Application Entry History"),
                 new Version(16, 0),
+                null),
+            new TableRelation(
+                new ObjectName("Microsoft.Inventory.Tracking", "Matched Order Line"),
+                new ObjectName("Microsoft.Inventory.Tracking", "Posted Matched Order Line"),
+                new Version(28, 0),
                 null),
             new TableRelation(
                 new ObjectName("Microsoft.Inventory.Tracking", "Reservation Entry"),
@@ -2498,6 +2513,11 @@ internal static class TransferFieldsRelations
                 new ObjectName("System.Security.AccessControl", "Aggregate Permission Set"),
                 new ObjectName("System.Security.AccessControl", "Permission Set Buffer"),
                 new Version(16, 0),
+                null),
+            new TableRelation(
+                new ObjectName("System.TestTools.AITestToolkit", "AIT Log Entry"),
+                new ObjectName("System.TestTools.AITestToolkit", "Agent Task Log"),
+                new Version(28, 0),
                 null),
             new TableRelation(
                 new ObjectName("System.Threading", "Job Queue Entry"),
