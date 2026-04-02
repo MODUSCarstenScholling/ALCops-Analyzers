@@ -31,6 +31,10 @@ runs:
         $sources = & "${{github.action_path}}/Get-BC-DevTools.ps1" -JsonPath "${{ inputs.json-path }}" | ConvertFrom-Json
         Write-Host "Retrieved $($sources.Count) sources for Microsoft Dynamics Business Central Development Tools."
 
+        # Preserve the full (non-deduplicated) list for the Display Sources step
+        $sourcesAllJson = $sources | ConvertTo-Json -Compress
+        echo "sources_all=$sourcesAllJson" >> $env:GITHUB_OUTPUT
+
         # Deduplicate by version; prefer NuGet > VSIX > BCArtifact for the same version
         $typePriority = @{ 'NuGet' = 1; 'VSIX' = 2; 'BCArtifact' = 3 }
         $sources = $sources |
@@ -62,7 +66,7 @@ runs:
     - name: Display sources
       shell: pwsh
       env:
-        SOURCES: ${{ steps.get-bc-devtools.outputs.sources }}
+        SOURCES: ${{ steps.get-bc-devtools.outputs.sources_all }}
       run: |
         $ErrorActionPreference = 'Stop'
         & "${{github.action_path}}/Display-Sources.ps1"

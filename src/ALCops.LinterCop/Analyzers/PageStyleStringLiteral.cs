@@ -22,6 +22,18 @@ public sealed class PageStyleStringLiteral : DiagnosticAnalyzer
     private static readonly Lazy<ImmutableDictionary<string, string>> StyleKindCanonicalNames =
         EnumProvider.StyleKind.CanonicalNames;
 
+    private static readonly Lazy<HashSet<NavTypeKind>> DataAccessNavTypeKinds = new(() =>
+    [
+        EnumProvider.NavTypeKind.Record,
+        EnumProvider.NavTypeKind.RecordRef,
+        EnumProvider.NavTypeKind.FieldRef,
+        EnumProvider.NavTypeKind.Query,
+        EnumProvider.NavTypeKind.Variant,
+        EnumProvider.NavTypeKind.DataTransfer,
+        EnumProvider.NavTypeKind.FilterPageBuilder,
+        EnumProvider.NavTypeKind.TableFilter,
+    ], LazyThreadSafetyMode.PublicationOnly);
+
     public override void Initialize(AnalysisContext context) =>
         context.RegisterSyntaxNodeAction(
             AnalyzeStringLiteralToken,
@@ -66,8 +78,13 @@ public sealed class PageStyleStringLiteral : DiagnosticAnalyzer
         if (IsStyleExprAssignment(ctx))
             return;
 
-        // Suppress diagnostic on assigment of field on a table
+        // Suppress diagnostic on assignment of field on a table
         if (IsWritingToTableField(ctx))
+            return;
+
+        // Suppress diagnostic on string literals used as arguments to data-access method invocations
+        // Methods on Record, RecordRef, FieldRef, Query, etc. operate on data values, not styles
+        if (IsDataAccessMethodInvocationArgument(ctx))
             return;
 
         ctx.ReportDiagnostic(Diagnostic.Create(
@@ -106,5 +123,21 @@ public sealed class PageStyleStringLiteral : DiagnosticAnalyzer
                 return true;
         }
         return false;
+    }
+
+    private static bool IsDataAccessMethodInvocationArgument(SyntaxNodeAnalysisContext ctx)
+    {
+        if (ctx.Node.GetFirstParent(EnumProvider.SyntaxKind.InvocationExpression)
+            is not InvocationExpressionSyntax invocation)
+            return false;
+
+        if (invocation.Expression is not MemberAccessExpressionSyntax memberAccess)
+            return false;
+
+        var instanceSymbol = ctx.SemanticModel.GetSymbolInfo(memberAccess.Expression).Symbol;
+        if (instanceSymbol?.GetTypeSymbol()?.GetNavTypeKindSafe() is not { } navTypeKind)
+            return false;
+
+        return DataAccessNavTypeKinds.Value.Contains(navTypeKind);
     }
 }
