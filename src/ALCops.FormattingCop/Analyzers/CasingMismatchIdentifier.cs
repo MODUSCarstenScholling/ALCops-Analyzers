@@ -51,7 +51,7 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
         var qualifiedNames = new List<QualifiedNameSyntax>();
         var triggers = new List<TriggerDeclarationSyntax>();
 
-        WalkNode(ctx, semanticModel, root, identifiers, qualifiedNames, triggers);
+        WalkNode(ctx, root, identifiers, qualifiedNames, triggers);
 
         ResolveIdentifiers(ctx, semanticModel, identifiers);
         ResolveQualifiedNames(ctx, semanticModel, qualifiedNames);
@@ -63,11 +63,10 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
     /// <summary>
     /// Iteratively walks the syntax tree using an explicit stack (avoids StackOverflowException
     /// on deeply nested trees such as long concatenation chains). Handles dictionary-resolvable
-    /// and symbol-resolvable cases inline, collecting nodes that require batched semantic resolution.
+    /// cases inline, collecting nodes that require batched semantic resolution.
     /// </summary>
     private static void WalkNode(
         SymbolAnalysisContext ctx,
-        SemanticModel semanticModel,
         SyntaxNode root,
         List<IdentifierNameSyntax> identifiers,
         List<QualifiedNameSyntax> qualifiedNames,
@@ -110,17 +109,17 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
                     continue;
                 }
 
-                // --- Properties: semantic model for name, dictionary for value ---
+                // --- Properties: dictionary-based resolution ---
 
                 if (child is PropertySyntax prop)
                 {
-                    HandleProperty(ctx, semanticModel, prop, identifiers, qualifiedNames, triggers, stack);
+                    HandleProperty(ctx, prop, identifiers, qualifiedNames, triggers, stack);
                     continue;
                 }
 
                 if (child is PropertyNameSyntax propName)
                 {
-                    ResolvePropertyName(ctx, semanticModel, propName);
+                    ResolvePropertyName(ctx, propName);
                     continue;
                 }
 
@@ -295,24 +294,23 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
     #region Inline Resolution
 
     /// <summary>
-    /// Handles property syntax: resolves the property name via semantic model,
-    /// and the property value via PropertyKind-targeted dictionary lookup.
+    /// Handles property syntax: resolves the property name and enum property value
+    /// via dictionary lookups, and walks non-trivial property value children.
     /// </summary>
     private static void HandleProperty(
         SymbolAnalysisContext ctx,
-        SemanticModel semanticModel,
         PropertySyntax prop,
         List<IdentifierNameSyntax> identifiers,
         List<QualifiedNameSyntax> qualifiedNames,
         List<TriggerDeclarationSyntax> triggers,
         Stack<(SyntaxNode node, bool skipIds)> stack)
     {
-        ResolvePropertyName(ctx, semanticModel, prop.Name);
+        ResolvePropertyName(ctx, prop.Name);
 
         switch (prop.Value)
         {
             case EnumPropertyValueSyntax enumVal:
-                ResolveEnumPropertyValue(ctx, semanticModel, prop, enumVal);
+                ResolveEnumPropertyValue(ctx, prop, enumVal);
                 break;
 
             case CommaSeparatedPropertyValueSyntax when
@@ -336,52 +334,29 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
     }
 
     /// <summary>
-    /// Resolves property name casing using the semantic model. Falls back to dictionary
-    /// lookup when the semantic model doesn't return a symbol.
+    /// Resolves property name casing via PropertyKind.CanonicalNames dictionary lookup.
+    /// Property names are a closed set defined by the SDK, so no semantic model call is needed.
     /// </summary>
-    private static void ResolvePropertyName(SymbolAnalysisContext ctx, SemanticModel semanticModel, PropertyNameSyntax propName)
+    private static void ResolvePropertyName(SymbolAnalysisContext ctx, PropertyNameSyntax propName)
     {
-        if (semanticModel.GetSymbolInfo(propName, ctx.CancellationToken).Symbol is IPropertySymbol propSymbol)
-        {
-            CompareIdentifier(ctx, propName.Identifier, propSymbol.PropertyKind.ToString());
-            return;
-        }
-
         CompareAgainstDictionary(ctx, propName.Identifier, EnumProvider.PropertyKind.CanonicalNames);
     }
 
     /// <summary>
-    /// Resolves enum property value casing. Uses GetDeclaredSymbol to get the PropertyKind,
-    /// then looks up the dynamically-discovered canonical names for value comparison.
+    /// Resolves enum property value casing. Derives PropertyKind from the property name string
+    /// and looks up the dynamically-discovered canonical names for value comparison.
     /// </summary>
     private static void ResolveEnumPropertyValue(
         SymbolAnalysisContext ctx,
-        SemanticModel semanticModel,
         PropertySyntax prop,
         EnumPropertyValueSyntax enumVal)
     {
-        if (semanticModel.GetDeclaredSymbol(prop, ctx.CancellationToken) is IPropertySymbol propSymbol)
-        {
-            if (_enumPropertyValuesByKind.Value.TryGetValue(propSymbol.PropertyKind, out var dict))
-            {
-                CompareAgainstDictionary(ctx, enumVal.Value.Identifier, dict);
-                return;
-            }
-        }
-
-        // Fallback: parse property name from source text and try all PropertyKind values
         var propName = prop.Name.Identifier.ValueText;
         if (string.IsNullOrEmpty(propName))
             return;
 
-        foreach (var kvp in _enumPropertyValuesByKind.Value)
-        {
-            if (string.Equals(kvp.Key.ToString(), propName, StringComparison.OrdinalIgnoreCase))
-            {
-                CompareAgainstDictionary(ctx, enumVal.Value.Identifier, kvp.Value);
-                return;
-            }
-        }
+        if (_enumPropertyValuesByName.Value.TryGetValue(propName, out var dict))
+            CompareAgainstDictionary(ctx, enumVal.Value.Identifier, dict);
     }
 
     private static void AnalyzeChildNodeIdentifiers(
@@ -452,7 +427,15 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
 
         foreach (var groupNode in groupNodes)
         {
-            var representative = groupNode.OrderBy(node => node.Position).Last();
+            IdentifierNameSyntax? representative = null;
+            foreach (var n in groupNode)
+            {
+                if (representative is null || n.Position > representative.Position)
+                    representative = n;
+            }
+
+            if (representative is null)
+                continue;
 
             if (representative.Identifier.ValueText is string identifierText
                 && KeywordTexts.Value.Contains(identifierText))
@@ -479,7 +462,16 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
 
         foreach (var groupNode in groupNodes)
         {
-            var representative = groupNode.OrderBy(node => node.Position).Last();
+            QualifiedNameSyntax? representative = null;
+            foreach (var n in groupNode)
+            {
+                if (representative is null || n.Position > representative.Position)
+                    representative = n;
+            }
+
+            if (representative is null)
+                continue;
+
             var symbol = semanticModel.GetSymbolInfo(representative, ctx.CancellationToken).Symbol;
 
             if (symbol is null)
@@ -540,6 +532,11 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
     private static void CompareIdentifier(SymbolAnalysisContext ctx, SyntaxToken identifier, string? canonical)
     {
         string? tokenText = identifier.ValueText?.UnquoteIdentifier();
+        ReportIfCasingMismatch(ctx, identifier, tokenText, canonical);
+    }
+
+    private static void ReportIfCasingMismatch(SymbolAnalysisContext ctx, SyntaxToken identifier, string? tokenText, string? canonical)
+    {
         if (string.IsNullOrEmpty(tokenText) || string.IsNullOrEmpty(canonical))
             return;
 
@@ -581,17 +578,17 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
         SyntaxToken identifier,
         ImmutableDictionary<string, string>? lookupDictionary)
     {
-        string? tokenText = identifier.ValueText?.UnquoteIdentifier();
-        if (string.IsNullOrEmpty(tokenText))
+        if (lookupDictionary is null)
             return;
 
-        if (lookupDictionary is null)
+        string? tokenText = identifier.ValueText?.UnquoteIdentifier();
+        if (string.IsNullOrEmpty(tokenText))
             return;
 
         if (!lookupDictionary.TryGetValue(tokenText, out string? canonical))
             return;
 
-        CompareIdentifier(ctx, identifier, canonical);
+        ReportIfCasingMismatch(ctx, identifier, tokenText, canonical);
     }
 
     #endregion
@@ -710,6 +707,16 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
             }
         }
 
+        return result;
+    }, LazyThreadSafetyMode.PublicationOnly);
+
+    // String-keyed version of _enumPropertyValuesByKind for direct property name lookups,
+    // avoiding the need for GetDeclaredSymbol to obtain the PropertyKind enum value.
+    private static readonly Lazy<Dictionary<string, ImmutableDictionary<string, string>>> _enumPropertyValuesByName = new(() =>
+    {
+        var result = new Dictionary<string, ImmutableDictionary<string, string>>(StringComparer.OrdinalIgnoreCase);
+        foreach (var kvp in _enumPropertyValuesByKind.Value)
+            result[kvp.Key.ToString()] = kvp.Value;
         return result;
     }, LazyThreadSafetyMode.PublicationOnly);
 
