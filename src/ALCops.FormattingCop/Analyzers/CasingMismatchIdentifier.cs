@@ -256,7 +256,13 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
 
     private static bool ShouldCollectIdentifier(IdentifierNameSyntax idName)
     {
-        if (idName.Parent?.Kind == EnumProvider.SyntaxKind.PageSystemPart)
+        var parentKind = idName.Parent?.Kind;
+
+        if (parentKind == EnumProvider.SyntaxKind.PageSystemPart)
+            return false;
+
+        if (parentKind == EnumProvider.SyntaxKind.PragmaWarningDirectiveTrivia ||
+            parentKind == EnumProvider.SyntaxKind.UnaryNotExpression)
             return false;
 
         if (string.Equals(idName.Identifier.ValueText, "Rec", StringComparison.OrdinalIgnoreCase))
@@ -421,8 +427,6 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
         List<IdentifierNameSyntax> identifiers)
     {
         var groupNodes = identifiers
-            .Where(node => node.Parent.Kind != EnumProvider.SyntaxKind.PragmaWarningDirectiveTrivia &&
-                           node.Parent.Kind != EnumProvider.SyntaxKind.UnaryNotExpression)
             .ToLookup(node => node.Identifier.ValueText, StringComparer.Ordinal);
 
         foreach (var groupNode in groupNodes)
