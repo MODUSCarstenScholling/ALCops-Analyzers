@@ -61,176 +61,184 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
     #region Tree Walk
 
     /// <summary>
-    /// Recursively walks the syntax tree, handling dictionary-resolvable and symbol-resolvable
-    /// cases inline and collecting nodes that require batched semantic resolution.
+    /// Iteratively walks the syntax tree using an explicit stack (avoids StackOverflowException
+    /// on deeply nested trees such as long concatenation chains). Handles dictionary-resolvable
+    /// and symbol-resolvable cases inline, collecting nodes that require batched semantic resolution.
     /// </summary>
     private static void WalkNode(
         SymbolAnalysisContext ctx,
         SemanticModel semanticModel,
-        SyntaxNode node,
+        SyntaxNode root,
         List<IdentifierNameSyntax> identifiers,
         List<QualifiedNameSyntax> qualifiedNames,
         List<TriggerDeclarationSyntax> triggers,
         bool skipChildIdentifiers = false)
     {
-        foreach (var child in node.ChildNodes())
+        var stack = new Stack<(SyntaxNode node, bool skipIds)>();
+        stack.Push((root, skipChildIdentifiers));
+
+        while (stack.Count > 0)
         {
-            ctx.CancellationToken.ThrowIfCancellationRequested();
+            var (node, currentSkipIds) = stack.Pop();
 
-            var kind = child.Kind;
-
-            if (kind == EnumProvider.SyntaxKind.ObjectId ||
-                kind == EnumProvider.SyntaxKind.LiteralAttributeArgument ||
-                kind == EnumProvider.SyntaxKind.LiteralExpression)
-                continue;
-
-            // --- Data types: NavTypeKind dictionary ---
-
-            if (child is SubtypedDataTypeSyntax subtyped)
+            foreach (var child in node.ChildNodes())
             {
-                if (subtyped.Subtype.Kind == EnumProvider.SyntaxKind.ObjectReference)
-                    CompareAgainstDictionary(ctx, subtyped.TypeName, _navTypeKindDictionary);
-                continue;
-            }
+                ctx.CancellationToken.ThrowIfCancellationRequested();
 
-            if (child is DataTypeSyntax dataType)
-            {
-                CompareAgainstDictionary(ctx, dataType.TypeName, _navTypeKindDictionary);
-                if (kind == EnumProvider.SyntaxKind.EnumDataType ||
-                    kind == EnumProvider.SyntaxKind.LabelDataType)
-                    WalkNode(ctx, semanticModel, child, identifiers, qualifiedNames, triggers);
-                continue;
-            }
+                var kind = child.Kind;
 
-            // --- Properties: semantic model for name, dictionary for value ---
+                if (kind == EnumProvider.SyntaxKind.ObjectId ||
+                    kind == EnumProvider.SyntaxKind.LiteralAttributeArgument ||
+                    kind == EnumProvider.SyntaxKind.LiteralExpression)
+                    continue;
 
-            if (child is PropertySyntax prop)
-            {
-                HandleProperty(ctx, semanticModel, prop, identifiers, qualifiedNames, triggers);
-                continue;
-            }
+                // --- Data types: NavTypeKind dictionary ---
 
-            if (child is PropertyNameSyntax propName)
-            {
-                ResolvePropertyName(ctx, semanticModel, propName);
-                continue;
-            }
-
-            // --- Attributes: AttributeKind dictionary ---
-
-            if (child is MemberAttributeSyntax)
-            {
-                foreach (var attrChild in child.ChildNodes())
+                if (child is SubtypedDataTypeSyntax subtyped)
                 {
-                    if (attrChild is IdentifierNameSyntax attrName)
-                        CompareAgainstDictionary(ctx, attrName.Identifier, EnumProvider.AttributeKind.CanonicalNames);
-                    else
-                        WalkNode(ctx, semanticModel, attrChild, identifiers, qualifiedNames, triggers);
+                    if (subtyped.Subtype.Kind == EnumProvider.SyntaxKind.ObjectReference)
+                        CompareAgainstDictionary(ctx, subtyped.TypeName, _navTypeKindDictionary);
+                    continue;
                 }
-                continue;
+
+                if (child is DataTypeSyntax dataType)
+                {
+                    CompareAgainstDictionary(ctx, dataType.TypeName, _navTypeKindDictionary);
+                    if (kind == EnumProvider.SyntaxKind.EnumDataType ||
+                        kind == EnumProvider.SyntaxKind.LabelDataType)
+                        stack.Push((child, false));
+                    continue;
+                }
+
+                // --- Properties: semantic model for name, dictionary for value ---
+
+                if (child is PropertySyntax prop)
+                {
+                    HandleProperty(ctx, semanticModel, prop, identifiers, qualifiedNames, triggers, stack);
+                    continue;
+                }
+
+                if (child is PropertyNameSyntax propName)
+                {
+                    ResolvePropertyName(ctx, semanticModel, propName);
+                    continue;
+                }
+
+                // --- Attributes: AttributeKind dictionary ---
+
+                if (child is MemberAttributeSyntax)
+                {
+                    foreach (var attrChild in child.ChildNodes())
+                    {
+                        if (attrChild is IdentifierNameSyntax attrName)
+                            CompareAgainstDictionary(ctx, attrName.Identifier, EnumProvider.AttributeKind.CanonicalNames);
+                        else
+                            stack.Push((attrChild, false));
+                    }
+                    continue;
+                }
+
+                // --- Label sub-properties (Comment, Locked, MaxLength) ---
+
+                if (child is IdentifierEqualsLiteralSyntax idEqualsLit)
+                {
+                    CompareAgainstDictionary(ctx, idEqualsLit.Identifier, _labelPropertyDictionary);
+                    continue;
+                }
+
+                // --- Page areas: AreaKind / ActionAreaKind dictionaries ---
+
+                if (kind == EnumProvider.SyntaxKind.PageArea)
+                {
+                    AnalyzeChildNodeIdentifiers(ctx, child, EnumProvider.AreaKind.CanonicalNames);
+                    stack.Push((child, false));
+                    continue;
+                }
+
+                if (kind == EnumProvider.SyntaxKind.PageActionArea)
+                {
+                    AnalyzeChildNodeIdentifiers(ctx, child, EnumProvider.ActionAreaKind.CanonicalNames);
+                    stack.Push((child, false));
+                    continue;
+                }
+
+                // --- Option access: SymbolKind dictionary (e.g., ObjectType::Table) ---
+
+                if (child is OptionAccessExpressionSyntax optAccess)
+                {
+                    AnalyzeOptionAccess(ctx, optAccess);
+                    continue;
+                }
+
+                // --- Nodes collected for batched semantic resolution ---
+
+                if (child is TriggerDeclarationSyntax trigger)
+                {
+                    triggers.Add(trigger);
+                    stack.Push((child, true));
+                    continue;
+                }
+
+                if (child is QualifiedNameSyntax qname)
+                {
+                    qualifiedNames.Add(qname);
+                    continue;
+                }
+
+                // --- Structural nodes with specific child handling ---
+
+                if (child is FieldGroupSyntax)
+                {
+                    var children = child.ChildNodes().ToArray();
+                    int start = (children.Length > 0 && children[0] is IdentifierNameSyntax) ? 1 : 0;
+                    for (int i = start; i < children.Length; i++)
+                        EnqueueNode(children[i], identifiers, qualifiedNames, stack);
+                    continue;
+                }
+
+                if (child is KeySyntax keySyntax)
+                {
+                    foreach (var field in keySyntax.Fields)
+                        EnqueueNode(field, identifiers, qualifiedNames, stack);
+                    continue;
+                }
+
+                if (kind == EnumProvider.SyntaxKind.ObjectNameReference)
+                {
+                    if (child.Parent?.Kind != EnumProvider.SyntaxKind.Interface)
+                        stack.Push((child, false));
+                    continue;
+                }
+
+                // --- Identifiers: collect for batched semantic resolution ---
+
+                if (child is IdentifierNameSyntax idName)
+                {
+                    if (!currentSkipIds && ShouldCollectIdentifier(idName))
+                        identifiers.Add(idName);
+                    continue;
+                }
+
+                // --- Default: walk child nodes via the stack ---
+
+                if (IsEmptyList(child))
+                    continue;
+
+                bool skipIds = _skipIdentifierParentKinds.Contains(kind);
+                stack.Push((child, skipIds));
             }
-
-            // --- Label sub-properties (Comment, Locked, MaxLength) ---
-
-            if (child is IdentifierEqualsLiteralSyntax idEqualsLit)
-            {
-                CompareAgainstDictionary(ctx, idEqualsLit.Identifier, _labelPropertyDictionary);
-                continue;
-            }
-
-            // --- Page areas: AreaKind / ActionAreaKind dictionaries ---
-
-            if (kind == EnumProvider.SyntaxKind.PageArea)
-            {
-                AnalyzeChildNodeIdentifiers(ctx, child, EnumProvider.AreaKind.CanonicalNames);
-                WalkNode(ctx, semanticModel, child, identifiers, qualifiedNames, triggers);
-                continue;
-            }
-
-            if (kind == EnumProvider.SyntaxKind.PageActionArea)
-            {
-                AnalyzeChildNodeIdentifiers(ctx, child, EnumProvider.ActionAreaKind.CanonicalNames);
-                WalkNode(ctx, semanticModel, child, identifiers, qualifiedNames, triggers);
-                continue;
-            }
-
-            // --- Option access: SymbolKind dictionary (e.g., ObjectType::Table) ---
-
-            if (child is OptionAccessExpressionSyntax optAccess)
-            {
-                AnalyzeOptionAccess(ctx, optAccess);
-                continue;
-            }
-
-            // --- Nodes collected for batched semantic resolution ---
-
-            if (child is TriggerDeclarationSyntax trigger)
-            {
-                triggers.Add(trigger);
-                WalkNode(ctx, semanticModel, child, identifiers, qualifiedNames, triggers, skipChildIdentifiers: true);
-                continue;
-            }
-
-            if (child is QualifiedNameSyntax qname)
-            {
-                qualifiedNames.Add(qname);
-                continue;
-            }
-
-            // --- Structural nodes with specific child handling ---
-
-            if (child is FieldGroupSyntax)
-            {
-                var children = child.ChildNodes().ToArray();
-                int start = (children.Length > 0 && children[0] is IdentifierNameSyntax) ? 1 : 0;
-                for (int i = start; i < children.Length; i++)
-                    ProcessNode(ctx, semanticModel, children[i], identifiers, qualifiedNames, triggers);
-                continue;
-            }
-
-            if (child is KeySyntax keySyntax)
-            {
-                foreach (var field in keySyntax.Fields)
-                    ProcessNode(ctx, semanticModel, field, identifiers, qualifiedNames, triggers);
-                continue;
-            }
-
-            if (kind == EnumProvider.SyntaxKind.ObjectNameReference)
-            {
-                if (child.Parent?.Kind != EnumProvider.SyntaxKind.Interface)
-                    WalkNode(ctx, semanticModel, child, identifiers, qualifiedNames, triggers);
-                continue;
-            }
-
-            // --- Identifiers: collect for batched semantic resolution ---
-
-            if (child is IdentifierNameSyntax idName)
-            {
-                if (!skipChildIdentifiers && ShouldCollectIdentifier(idName))
-                    identifiers.Add(idName);
-                continue;
-            }
-
-            // --- Default: recurse into child nodes ---
-
-            if (IsEmptyList(child))
-                continue;
-
-            bool skipIds = _skipIdentifierParentKinds.Contains(kind);
-            WalkNode(ctx, semanticModel, child, identifiers, qualifiedNames, triggers, skipIds);
         }
     }
 
     /// <summary>
-    /// Processes a single node that may be a leaf (IdentifierName, QualifiedName) or a subtree.
+    /// Enqueues a single node: collects it if it's an identifier or qualified name,
+    /// otherwise pushes it onto the walk stack for further processing.
     /// </summary>
-    private static void ProcessNode(
-        SymbolAnalysisContext ctx,
-        SemanticModel semanticModel,
+    private static void EnqueueNode(
         SyntaxNode node,
         List<IdentifierNameSyntax> identifiers,
         List<QualifiedNameSyntax> qualifiedNames,
-        List<TriggerDeclarationSyntax> triggers)
+        Stack<(SyntaxNode node, bool skipIds)> stack)
     {
         if (node is IdentifierNameSyntax idName)
         {
@@ -243,7 +251,7 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
         }
         else
         {
-            WalkNode(ctx, semanticModel, node, identifiers, qualifiedNames, triggers);
+            stack.Push((node, false));
         }
     }
 
@@ -296,7 +304,8 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
         PropertySyntax prop,
         List<IdentifierNameSyntax> identifiers,
         List<QualifiedNameSyntax> qualifiedNames,
-        List<TriggerDeclarationSyntax> triggers)
+        List<TriggerDeclarationSyntax> triggers,
+        Stack<(SyntaxNode node, bool skipIds)> stack)
     {
         ResolvePropertyName(ctx, semanticModel, prop.Name);
 
@@ -320,7 +329,7 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
                 foreach (var propChild in prop.ChildNodes())
                 {
                     if (propChild is not PropertyNameSyntax)
-                        WalkNode(ctx, semanticModel, propChild, identifiers, qualifiedNames, triggers);
+                        stack.Push((propChild, false));
                 }
                 break;
         }

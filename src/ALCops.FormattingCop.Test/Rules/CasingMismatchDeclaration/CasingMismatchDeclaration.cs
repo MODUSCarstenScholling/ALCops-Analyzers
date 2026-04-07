@@ -71,6 +71,7 @@ namespace ALCops.FormattingCop.Test
         [TestCase("TriggerDeclaration")]
         [TestCase("VariableNamedAfterKeyword")]
         [TestCase("ObjectTypeOptionAccess")]
+        [TestCase("DeeplyNestedExpression")]
         public async Task NoDiagnostic(string testCase)
         {
             SkipTestIfVersionIsTooLow(
