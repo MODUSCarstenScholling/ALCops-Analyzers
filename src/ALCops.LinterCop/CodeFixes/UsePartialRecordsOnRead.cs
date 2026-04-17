@@ -212,6 +212,28 @@ public sealed class UsePartialRecordsOnReadCodeFixProvider : CodeFixProvider
 
     private sealed class FieldAccessCollector : OperationWalker
     {
+        /// <summary>
+        /// Built-in Record methods where the first argument is a field selector (not a consumed value).
+        /// Remaining arguments (if any) may contain consumed field accesses and are still visited.
+        /// </summary>
+        private static readonly HashSet<string> FirstArgFieldSelectorMethods = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "SetRange", "SetFilter",
+            "GetRangeMin", "GetRangeMax", "GetFilter",
+            "SetAscending",
+            "FieldCaption", "FieldName", "FieldNo",
+            "HasFilter", "FieldActive"
+        };
+
+        /// <summary>
+        /// Built-in Record methods where ALL arguments are field selectors (none are consumed values).
+        /// </summary>
+        private static readonly HashSet<string> AllArgsFieldSelectorMethods = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "SetCurrentKey",
+            "AddLoadFields", "LoadFields", "AreFieldsLoaded"
+        };
+
         private readonly string _variableName;
 
         public HashSet<string> AccessedFields { get; } = new(StringComparer.OrdinalIgnoreCase);
@@ -219,6 +241,37 @@ public sealed class UsePartialRecordsOnReadCodeFixProvider : CodeFixProvider
         public FieldAccessCollector(string variableName)
         {
             _variableName = variableName;
+        }
+
+        public override void VisitInvocationExpression(IInvocationExpression operation)
+        {
+            if (IsTrackedBuiltInMethodCall(operation, out var methodName))
+            {
+                if (AllArgsFieldSelectorMethods.Contains(methodName))
+                    return;
+
+                if (FirstArgFieldSelectorMethods.Contains(methodName)
+                    && operation.Arguments.Length > 0)
+                {
+                    for (int i = 1; i < operation.Arguments.Length; i++)
+                        Visit(operation.Arguments[i]);
+                    return;
+                }
+            }
+
+            base.VisitInvocationExpression(operation);
+        }
+
+        private bool IsTrackedBuiltInMethodCall(IInvocationExpression operation, out string methodName)
+        {
+            methodName = operation.TargetMethod.Name;
+
+            if (operation.TargetMethod.MethodKind != EnumProvider.MethodKind.BuiltInMethod)
+                return false;
+
+            ISymbol? instanceSymbol = operation.Instance?.GetSymbol();
+            return instanceSymbol != null
+                && string.Equals(instanceSymbol.Name, _variableName, StringComparison.OrdinalIgnoreCase);
         }
 
         public override void VisitFieldAccess(IFieldAccess operation)
