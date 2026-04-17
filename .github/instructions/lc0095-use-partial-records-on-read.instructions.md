@@ -38,6 +38,9 @@ These decisions were made during the initial design and should be preserved unle
 | Field access required | No (report on read operation alone) | User preference; may generate noise on patterns like `if Rec.Get(Key) then` |
 | RecordRef | Included | Skip temp/table-type checks (not statically determinable for RecordRef) |
 | Record table type | Normal only | Skip CDS, Exchange, temporary, and other non-SQL table types |
+| RecordRef.SetTable(Record) | Link suppression to target Record | If target has write ops, passed to function, load fields, or is non-local/unresolvable: suppress RecordRef. Only simple overload (1 arg). |
+| RecordRef.SetTable(Record, Boolean) | Out of scope | ShareTable overload not handled; revisit if users report false positives |
+| RecordRef.GetTable | Out of scope | Reverse direction; only SetTable for now |
 
 ## Architecture
 
@@ -55,6 +58,7 @@ Uses `RegisterCodeBlockAction` (not `RegisterOperationAction`) to analyze entire
    - `HasWriteOp`: Insert, Modify, ModifyAll, Delete, DeleteAll, Rename, TransferFields, Init, Copy
    - `PassedToFunction`: Variable appears as argument to ANY invocation, or a non-built-in method is called ON the variable
 4. Report at each read location where none of the suppression conditions are met
+5. For RecordRef variables with `SetTable(TargetRecord)` calls: suppress if any target is unresolvable, non-local, or has a suppression condition (write op, passed to function, load fields)
 
 ### Key implementation detail: argument checking
 
@@ -96,7 +100,7 @@ AA0242 (CodeCop's `Rule0242PartialRecordsDetectJitLoads`) is the **complement** 
 
 ## Test coverage
 
-26 test cases organized as:
+33 test cases organized as:
 
 ### HasDiagnostic (6 cases)
 | Test case | Scenario |
@@ -108,7 +112,7 @@ AA0242 (CodeCop's `Rule0242PartialRecordsDetectJitLoads`) is the **complement** 
 | LocalRecordFind | Find() |
 | LocalRecordMultipleReads | Multiple read ops on same variable (both should report) |
 
-### NoDiagnostic (16 cases)
+### NoDiagnostic (22 cases)
 | Test case | Suppression reason |
 |---|---|
 | HasSetLoadFields | SetLoadFields already present |
@@ -120,6 +124,9 @@ AA0242 (CodeCop's `Rule0242PartialRecordsDetectJitLoads`) is the **complement** 
 | HasDeleteAll | Write operation (DeleteAll) |
 | HasModifyAll | Write operation (ModifyAll) |
 | HasRename | Write operation (Rename) |
+| HasTransferFields | Write operation (TransferFields) |
+| HasInit | Write operation (Init) |
+| HasCopy | Write operation (Copy) |
 | PassedToFunction | Variable passed to user-defined function |
 | PassedToEvent | Variable passed to IntegrationEvent publisher |
 | PassedToPageRun | Variable passed to PAGE.Run() |
@@ -127,6 +134,9 @@ AA0242 (CodeCop's `Rule0242PartialRecordsDetectJitLoads`) is the **complement** 
 | GlobalVariable | Global variable (Phase 1: skip) |
 | ParameterVariable | Parameter variable (not a local) |
 | IsEmptyOnly | Only IsEmpty call, no read operation |
+| CDSTable | CDS table type (non-Normal) |
+| RecordRefSetTableWithModify | RecordRef.Get() + SetTable(MyTable) + MyTable.Modify() |
+| RecordRefSetTablePassedToFunction | RecordRef.Get() + SetTable(MyTable) + MyTable passed to function |
 
 ### HasFix (4 cases)
 | Test case | Scenario |

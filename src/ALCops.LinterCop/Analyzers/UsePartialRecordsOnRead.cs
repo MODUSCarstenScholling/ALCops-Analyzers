@@ -73,6 +73,9 @@ public sealed class UsePartialRecordsOnRead : DiagnosticAnalyzer
                 state.PassedToFunction)
                 continue;
 
+            if (state.IsRecordRef && ShouldSuppressViaSetTable(state, trackedVariables))
+                continue;
+
             foreach (var readInfo in state.ReadLocations)
             {
                 context.ReportDiagnostic(Diagnostic.Create(
@@ -90,10 +93,36 @@ public sealed class UsePartialRecordsOnRead : DiagnosticAnalyzer
         foreach (var local in methodSymbol.LocalVariables)
         {
             if (IsEligibleVariable(local))
-                result[local.Name] = new VariableState();
+                result[local.Name] = new VariableState
+                {
+                    IsRecordRef = local.Type?.NavTypeKind == EnumProvider.NavTypeKind.RecordRef
+                };
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// When a RecordRef calls SetTable(TargetRecord), the RecordRef's diagnostic is suppressed if:
+    /// - Any target is unresolvable (null) or not a tracked local variable (conservative)
+    /// - Any tracked target has a suppression condition (write op, passed to function, has load fields call)
+    /// </summary>
+    private static bool ShouldSuppressViaSetTable(VariableState state,
+        Dictionary<string, VariableState> trackedVariables)
+    {
+        if (state.SetTableTargets.Count == 0)
+            return false;
+
+        foreach (var targetName in state.SetTableTargets)
+        {
+            if (targetName is null || !trackedVariables.TryGetValue(targetName, out var targetState))
+                return true;
+
+            if (targetState.HasWriteOp || targetState.PassedToFunction || targetState.HasLoadFieldsCall)
+                return true;
+        }
+
+        return false;
     }
 
     private static bool IsEligibleVariable(IVariableSymbol variable)
@@ -114,10 +143,7 @@ public sealed class UsePartialRecordsOnRead : DiagnosticAnalyzer
             return true;
         }
 
-        if (type.NavTypeKind == EnumProvider.NavTypeKind.RecordRef)
-            return true;
-
-        return false;
+        return type.NavTypeKind == EnumProvider.NavTypeKind.RecordRef;
     }
 
     private sealed class VariableState
@@ -126,6 +152,8 @@ public sealed class UsePartialRecordsOnRead : DiagnosticAnalyzer
         public bool HasLoadFieldsCall { get; set; }
         public bool HasWriteOp { get; set; }
         public bool PassedToFunction { get; set; }
+        public bool IsRecordRef { get; set; }
+        public List<string?> SetTableTargets { get; } = new();
     }
 
 #if NETSTANDARD2_1
@@ -184,6 +212,10 @@ public sealed class UsePartialRecordsOnRead : DiagnosticAnalyzer
                     state.HasLoadFieldsCall = true;
                 else if (WriteMethods.Contains(methodName))
                     state.HasWriteOp = true;
+                else if (state.IsRecordRef
+                    && string.Equals(methodName, "SetTable", StringComparison.OrdinalIgnoreCase)
+                    && operation.Arguments.Length == 1)
+                    state.SetTableTargets.Add(GetVariableNameFromArgument(operation.Arguments[0]));
             }
             else
             {

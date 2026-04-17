@@ -57,6 +57,8 @@ namespace ALCops.LinterCop.Test
         [TestCase("HasInit")]
         [TestCase("HasCopy")]
         [TestCase("CDSTable")]
+        [TestCase("RecordRefSetTableWithModify")]
+        [TestCase("RecordRefSetTablePassedToFunction")]
         public async Task NoDiagnostic(string testCase)
         {
             var code = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(NoDiagnostic), $"{testCase}.al"))
