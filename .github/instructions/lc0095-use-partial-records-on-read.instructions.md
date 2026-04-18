@@ -38,6 +38,9 @@ These decisions were made during the initial design and should be preserved unle
 | Field access required | No (report on read operation alone) | User preference; may generate noise on patterns like `if Rec.Get(Key) then` |
 | RecordRef | Included | Skip temp/table-type checks (not statically determinable for RecordRef) |
 | Record table type | Normal only | Skip CDS, Exchange, temporary, and other non-SQL table types |
+| RecordRef.SetTable(Record) | Link suppression to target Record | If target has write ops, passed to function, load fields, or is non-local/unresolvable: suppress RecordRef. Only simple overload (1 arg). |
+| RecordRef.SetTable(Record, Boolean) | Out of scope | ShareTable overload not handled; revisit if users report false positives |
+| RecordRef.GetTable | Out of scope | Reverse direction; only SetTable for now |
 
 ## Architecture
 
@@ -55,6 +58,7 @@ Uses `RegisterCodeBlockAction` (not `RegisterOperationAction`) to analyze entire
    - `HasWriteOp`: Insert, Modify, ModifyAll, Delete, DeleteAll, Rename, TransferFields, Init, Copy
    - `PassedToFunction`: Variable appears as argument to ANY invocation, or a non-built-in method is called ON the variable
 4. Report at each read location where none of the suppression conditions are met
+5. For RecordRef variables with `SetTable(TargetRecord)` calls: suppress if any target is unresolvable, non-local, or has a suppression condition (write op, passed to function, load fields)
 
 ### Key implementation detail: argument checking
 
@@ -96,9 +100,9 @@ AA0242 (CodeCop's `Rule0242PartialRecordsDetectJitLoads`) is the **complement** 
 
 ## Test coverage
 
-26 test cases organized as:
+40 test cases organized as:
 
-### HasDiagnostic (6 cases)
+### HasDiagnostic (7 cases)
 | Test case | Scenario |
 |---|---|
 | LocalRecordGet | Basic Get() without SetLoadFields |
@@ -107,8 +111,9 @@ AA0242 (CodeCop's `Rule0242PartialRecordsDetectJitLoads`) is the **complement** 
 | LocalRecordFindLast | FindLast() |
 | LocalRecordFind | Find() |
 | LocalRecordMultipleReads | Multiple read ops on same variable (both should report) |
+| LocalRecordRefFindFirst | RecordRef FindFirst() |
 
-### NoDiagnostic (16 cases)
+### NoDiagnostic (22 cases)
 | Test case | Suppression reason |
 |---|---|
 | HasSetLoadFields | SetLoadFields already present |
@@ -120,6 +125,9 @@ AA0242 (CodeCop's `Rule0242PartialRecordsDetectJitLoads`) is the **complement** 
 | HasDeleteAll | Write operation (DeleteAll) |
 | HasModifyAll | Write operation (ModifyAll) |
 | HasRename | Write operation (Rename) |
+| HasTransferFields | Write operation (TransferFields) |
+| HasInit | Write operation (Init) |
+| HasCopy | Write operation (Copy) |
 | PassedToFunction | Variable passed to user-defined function |
 | PassedToEvent | Variable passed to IntegrationEvent publisher |
 | PassedToPageRun | Variable passed to PAGE.Run() |
@@ -127,20 +135,30 @@ AA0242 (CodeCop's `Rule0242PartialRecordsDetectJitLoads`) is the **complement** 
 | GlobalVariable | Global variable (Phase 1: skip) |
 | ParameterVariable | Parameter variable (not a local) |
 | IsEmptyOnly | Only IsEmpty call, no read operation |
+| CDSTable | CDS table type (non-Normal) |
+| RecordRefSetTableWithModify | RecordRef.Get() + SetTable(MyTable) + MyTable.Modify() |
+| RecordRefSetTablePassedToFunction | RecordRef.Get() + SetTable(MyTable) + MyTable passed to function |
 
-### HasFix (4 cases)
+### HasFix (11 cases)
 | Test case | Scenario |
 |---|---|
 | SingleField | One field accessed, inserts SetLoadFields with that field |
 | MultipleFields | Two fields accessed, inserts SetLoadFields with both (sorted alphabetically) |
 | QuotedFieldName | Field with spaces, properly quoted in SetLoadFields |
 | NoFieldAccess | No field access found, falls back to primary key fields |
+| SetRangeFieldExcluded | SetRange(F1, 'A') + exit(F2): only F2 in SetLoadFields (F1 is filter selector) |
+| SetFilterFieldExcluded | SetFilter(F1, '%1', 'A') + exit(F2): only F2 in SetLoadFields |
+| SetRangeValueArgIncluded | SetRange(F1, MyTable.F2): F2 included (value arg is consumed) |
+| AllFieldsInFilters | SetRange(F1) + SetRange(F2) only, no consumed fields: falls back to PK |
+| TestFieldIncluded | TestField(F1, 'X') + exit(F2): both F1 and F2 included (TestField consumes) |
+| SetCurrentKeyExcluded | SetCurrentKey(F1) + exit(F2): only F2 in SetLoadFields |
+| MixedFilterAndConsume | SetRange(F1, 'A') + exit(F1 + F2): both included (F1 consumed in exit) |
 
 ## CodeFix: UsePartialRecordsOnReadCodeFixProvider
 
 ### Purpose
 
-Provides a QuickFix "ALCops: Add SetLoadFields" that inserts a `SetLoadFields` call immediately before the read operation, pre-populated with the fields accessed on the variable in the method body.
+Provides a QuickFix "ALCops: Add SetLoadFields" that inserts a `SetLoadFields` call immediately before the read operation, pre-populated with only the fields whose values are actually consumed in the method body. Fields used solely as selectors in filter/metadata methods (e.g., `SetRange`, `SetFilter`, `SetCurrentKey`) are excluded.
 
 ### Design decisions
 
@@ -152,14 +170,55 @@ Provides a QuickFix "ALCops: Add SetLoadFields" that inserts a `SetLoadFields` c
 | Field ordering | Alphabetical (case-insensitive) | Deterministic output regardless of source order |
 | Field filtering | Normal fields only | Skip FlowField, FlowFilter, Blob (SetLoadFields returns false for these) |
 | Insertion position | New statement before the read operation's containing statement | Matches MS docs conventions |
+| Filter field exclusion | Built-in methods only | User-defined methods already trigger PassedToFunction suppression in the analyzer |
+| Exclusion approach | Override VisitInvocationExpression, selectively visit arguments | Clean, avoids fragile skip-set patterns; extensible via HashSets |
+| Value args in filter methods | Still collected if they're field accesses | `SetRange(F1, MyTable.F2)` should include F2 since F2's value is consumed |
+| All-filters fallback | Falls back to PK fields | Consistent with existing no-field-access behavior |
+
+### Field selector exclusion in FieldAccessCollector
+
+The `FieldAccessCollector` overrides `VisitInvocationExpression` to detect built-in Record methods that use field references as selectors rather than value consumers. Two categories:
+
+**FirstArgFieldSelectorMethods** (exclude arg[0] only, visit remaining args normally):
+
+| Method | Why excluded |
+|---|---|
+| `SetRange` | Arg 0 = filter field, args 1-2 = filter values (WHERE clause) |
+| `SetFilter` | Arg 0 = filter field, rest = filter expression |
+| `GetRangeMin` | Arg 0 = field selector, returns filter range |
+| `GetRangeMax` | Arg 0 = field selector, returns filter range |
+| `GetFilter` | Arg 0 = field selector, returns filter string |
+| `SetAscending` | Arg 0 = field selector, arg 1 = boolean |
+| `FieldCaption` | Arg 0 = field selector, returns metadata |
+| `FieldName` | Arg 0 = field selector, returns metadata |
+| `FieldNo` | Arg 0 = field selector, returns metadata |
+| `HasFilter` | Arg 0 = field selector, returns boolean |
+| `FieldActive` | Arg 0 = field selector, returns boolean |
+
+**AllArgsFieldSelectorMethods** (exclude all arguments):
+
+| Method | Why excluded |
+|---|---|
+| `SetCurrentKey` | All args are key fields for sorting |
+| `AddLoadFields` | All args are field selectors for loading |
+| `LoadFields` | All args are field selectors for JIT load |
+| `AreFieldsLoaded` | All args are field selectors for checking |
+
+**Value-consuming methods (NOT excluded, fields collected normally):**
+
+| Method | Why included |
+|---|---|
+| `TestField` | Reads current field value to compare/validate |
+| `FieldError` | May include field value in error message |
 
 ### Architecture
 
 1. **CodeFix receives** the diagnostic span
 2. **Gets SemanticModel** via `document.GetSemanticModelAsync()` (proven pattern from PossibleOverflowAssigning CodeFix)
 3. **Resolves the variable** and record type from the invocation instance
-4. **Walks the operation tree** with `FieldAccessCollector` (OperationWalker) to find all Normal fields accessed on the variable
-5. **Falls back to PK fields** when no Normal field accesses are found
-6. **Sorts fields alphabetically** for deterministic output
-7. **Builds** `Record.SetLoadFields(Record.Field1, Record.Field2)` syntax using `SyntaxFactory`
-8. **Inserts** before the read statement using `root.InsertNodesBefore()`
+4. **Walks the operation tree** with `FieldAccessCollector` (OperationWalker) to find consumed Normal fields on the variable
+5. **FieldAccessCollector** overrides `VisitInvocationExpression` to skip field-selector arguments in known built-in methods
+6. **Falls back to PK fields** when no consumed field accesses are found
+7. **Sorts fields alphabetically** for deterministic output
+8. **Builds** `Record.SetLoadFields(Record.Field1, Record.Field2)` syntax using `SyntaxFactory`
+9. **Inserts** before the read statement using `root.InsertNodesBefore()`

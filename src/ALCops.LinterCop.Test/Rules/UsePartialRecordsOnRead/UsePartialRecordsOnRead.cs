@@ -57,6 +57,8 @@ namespace ALCops.LinterCop.Test
         [TestCase("HasInit")]
         [TestCase("HasCopy")]
         [TestCase("CDSTable")]
+        [TestCase("RecordRefSetTableWithModify")]
+        [TestCase("RecordRefSetTablePassedToFunction")]
         public async Task NoDiagnostic(string testCase)
         {
             var code = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(NoDiagnostic), $"{testCase}.al"))
@@ -70,6 +72,13 @@ namespace ALCops.LinterCop.Test
         [TestCase("MultipleFields")]
         [TestCase("QuotedFieldName")]
         [TestCase("NoFieldAccess")]
+        [TestCase("SetRangeFieldExcluded")]
+        [TestCase("SetFilterFieldExcluded")]
+        [TestCase("SetRangeValueArgIncluded")]
+        [TestCase("AllFieldsInFilters")]
+        [TestCase("TestFieldIncluded")]
+        [TestCase("SetCurrentKeyExcluded")]
+        [TestCase("MixedFilterAndConsume")]
         public async Task HasFix(string testCase)
         {
             var currentCode = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(HasFix), testCase, "current.al"))
