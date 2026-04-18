@@ -16,6 +16,7 @@
     <ItemGroup>
         <Compile Remove="ALCops.ApplicationCopAnalyzers.cs" />
         <EmbeddedResource Update="ALCops.ApplicationCopAnalyzers.resx">
+            <LogicalName>ALCops.ApplicationCop.ApplicationCopAnalyzers.resources</LogicalName>
             <Generator>MSBuild:Compile</Generator>
             <StronglyTypedLanguage>CSharp</StronglyTypedLanguage>
             <StronglyTypedNamespace>ALCops.ApplicationCop</StronglyTypedNamespace>
