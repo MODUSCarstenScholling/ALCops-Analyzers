@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Microsoft.Dynamics.Nav.CodeAnalysis;
 #if NETSTANDARD2_1
 using Newtonsoft.Json;
 #else
@@ -36,24 +37,30 @@ public static class ALCopsSettingsProvider
     /// <returns>The settings instance (never null)</returns>
     public static ALCopsSettings GetSettings(string? workspacePath)
     {
-        string key = workspacePath ?? string.Empty;
-
-        if (_cache.TryGetValue(key, out ALCopsSettings? cached))
-            return cached;
-
-        if (string.IsNullOrEmpty(key))
+        if (string.IsNullOrEmpty(workspacePath))
             return new ALCopsSettings();
 
-        return _cache.GetOrAdd(key, LoadSettings);
+        return _cache.GetOrAdd(workspacePath, LoadSettings);
     }
 
     /// <summary>
-    /// Pre-populates the settings cache for a given workspace path.
-    /// Intended for test use. Call <see cref="ClearCache"/> in test teardown to clean up.
+    /// Gets the settings from the compilation's file system.
+    /// Not cached, since each compilation may have different files.
+    /// Falls back to default settings when no alcops.json is found.
     /// </summary>
-    public static void SetSettings(string workspacePath, ALCopsSettings settings)
+    public static ALCopsSettings GetSettings(IFileSystem fileSystem)
     {
-        _cache[workspacePath] = settings;
+        try
+        {
+            using Stream stream = fileSystem.OpenRead(SettingsFileName);
+            using StreamReader reader = new(stream);
+            string json = reader.ReadToEnd();
+            return DeserializeSettings(json);
+        }
+        catch
+        {
+            return new ALCopsSettings();
+        }
     }
 
     private static ALCopsSettings LoadSettings(string workspacePath)
@@ -64,6 +71,11 @@ public static class ALCopsSettingsProvider
             return new ALCopsSettings();
 
         var json = File.ReadAllText(settingsFilePath);
+        return DeserializeSettings(json);
+    }
+
+    private static ALCopsSettings DeserializeSettings(string json)
+    {
 #if NETSTANDARD2_1
         return JsonConvert.DeserializeObject<ALCopsSettings>(json) ?? new ALCopsSettings();
 #else
@@ -99,8 +111,4 @@ public static class ALCopsSettingsProvider
         return File.Exists(settingsFilePath) ? settingsFilePath : null;
     }
 
-    public static void ClearCache()
-    {
-        _cache.Clear();
-    }
 }
