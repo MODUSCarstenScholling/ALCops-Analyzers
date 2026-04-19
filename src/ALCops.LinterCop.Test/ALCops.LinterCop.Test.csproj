@@ -46,11 +46,11 @@
 
     <!-- Binary dependencies; definition driven by NavBinaryTfm and Configuration -->
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true'">
-        <Reference Include="ALCop.Common">
-            <HintPath>../ALCops.Common/bin/$(Configuration)/$(NavBinaryTfm)/ALCops.Common.dll</HintPath>
+        <Reference Include="ALCops.Common">
+            <HintPath>../ALCops.LinterCop/bin/$(Configuration)/$(NavBinaryTfm)/ALCops.Common.dll</HintPath>
             <Private>True</Private>
         </Reference>
-        <Reference Include="ALCop.LinterCop">
+        <Reference Include="ALCops.LinterCop">
             <HintPath>../ALCops.LinterCop/bin/$(Configuration)/$(NavBinaryTfm)/ALCops.LinterCop.dll</HintPath>
             <Private>True</Private>
         </Reference>
