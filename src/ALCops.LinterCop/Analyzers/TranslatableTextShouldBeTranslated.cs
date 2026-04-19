@@ -55,8 +55,7 @@ public sealed class TranslatableTextShouldBeTranslated : DiagnosticAnalyzer
         if (manifest is not null && !manifest.CompilerFeatures.ShouldGenerateTranslationFile())
             return;
 
-        string? workspacePath = fileSystem.GetDirectoryPath();
-        ALCopsSettings settings = ALCopsSettingsProvider.GetSettings(workspacePath);
+        ALCopsSettings settings = ALCopsSettingsProvider.GetSettings(fileSystem);
 
         string appName = manifest?.AppName ?? string.Empty;
         TranslationIndex? translationIndex = BuildTranslationIndex(fileSystem, appName, settings.LanguagesToTranslate);

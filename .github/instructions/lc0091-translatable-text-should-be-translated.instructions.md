@@ -39,6 +39,7 @@ These decisions were made during the initial design and should be preserved unle
 | Null manifest behavior | Proceed with analysis (don't skip) | Tests create minimal compilations without manifests; real projects always have manifests |
 | XLIFF caching | Load once in CompilationStartAction | Avoid re-parsing per symbol |
 | Settings | `LanguagesToTranslate` array in `alcops.json` | Override semantics: when set, these are the available languages (XLIFF files only parsed for matching languages); when unset, discover from XLIFF files |
+| Settings loading | `GetSettings(workspacePath, fileSystem)` overload | Reads `alcops.json` from `IFileSystem` first, falls back to string-based cache. Eliminates shared mutable state for test isolation. |
 | Locked labels | Skip (no diagnostic) | Locked labels are intentionally untranslated |
 | Locked detection | Syntax-based via `CommaSeparatedIdentifierEqualsLiteralList` | Label sub-properties aren't exposed as semantic symbols |
 | Obsolete symbols | Skip (no diagnostic) | Standard ALCops convention |
@@ -172,7 +173,17 @@ The `CreateFixtureWithoutXliff()` helper creates a fixture with:
 
 ### Settings injection for tests
 
-Tests that need `LanguagesToTranslate` use `ALCopsSettingsProvider.SetSettings("", settings)` to inject settings for the empty workspace path returned by `MemoryFileSystem.GetDirectoryPath()`. A `[TearDown]` calls `ALCopsSettingsProvider.ClearCache()` to avoid cross-test pollution.
+Tests that need `LanguagesToTranslate` provide an `alcops.json` file through the `MemoryFileSystem`, matching the pattern used for XLIFF files. The analyzer calls `ALCopsSettingsProvider.GetSettings(workspacePath, fileSystem)`, which reads `alcops.json` from the `IFileSystem` before falling back to the string-based cache. This eliminates shared mutable state, making settings-dependent tests fully parallel-safe.
+
+Two fixture helpers handle settings scenarios:
+- `CreateFixtureWithSettings(settingsContent)`: `MemoryFileSystem` with only `alcops.json` (no XLIFF files)
+- `CreateFixtureWithXliffAndSettings(settingsContent)`: `MemoryFileSystem` with both `Translations/TestApp.da-DK.xlf` and `alcops.json`
+
+Static byte arrays define the settings JSON:
+- `SettingsWithDaDK`: `{"LanguagesToTranslate": ["da-DK"]}`
+- `SettingsWithDaDKAndDeDE`: `{"LanguagesToTranslate": ["da-DK", "de-DE"]}`
+
+No `[TearDown]`, `SetSettings`, or `ClearCache` calls are needed. Each test creates its own isolated `MemoryFileSystem` instance.
 
 ## Phase 2 roadmap (not yet implemented)
 

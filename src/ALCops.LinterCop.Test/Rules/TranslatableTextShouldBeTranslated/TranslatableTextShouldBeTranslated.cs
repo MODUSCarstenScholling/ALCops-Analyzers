@@ -1,4 +1,3 @@
-using ALCops.Common.Settings;
 using Microsoft.Dynamics.Nav.CodeAnalysis;
 using RoslynTestKit;
 
@@ -21,6 +20,12 @@ namespace ALCops.LinterCop.Test
             </xliff>
             """);
 
+        private static readonly byte[] SettingsWithDaDK = System.Text.Encoding.UTF8.GetBytes(
+            """{"LanguagesToTranslate": ["da-DK"]}""");
+
+        private static readonly byte[] SettingsWithDaDKAndDeDE = System.Text.Encoding.UTF8.GetBytes(
+            """{"LanguagesToTranslate": ["da-DK", "de-DE"]}""");
+
         [SetUp]
         public void Setup()
         {
@@ -28,12 +33,6 @@ namespace ALCops.LinterCop.Test
                 Directory.GetParent(
                     Environment.CurrentDirectory)!.Parent!.Parent!.FullName,
                     Path.Combine("Rules", nameof(TranslatableTextShouldBeTranslated)));
-        }
-
-        [TearDown]
-        public void TearDown()
-        {
-            ALCopsSettingsProvider.ClearCache();
         }
 
         private static AnalyzerTestFixture CreateFixtureWithEmptyXliff()
@@ -54,6 +53,37 @@ namespace ALCops.LinterCop.Test
         private static AnalyzerTestFixture CreateFixtureWithoutXliff()
         {
             var files = new Dictionary<string, byte[]>();
+            var fileSystem = new MemoryFileSystem(files);
+
+            return RoslynFixtureFactory.Create<Analyzers.TranslatableTextShouldBeTranslated>(
+                new AnalyzerTestFixtureConfig
+                {
+                    FileSystem = fileSystem
+                });
+        }
+
+        private static AnalyzerTestFixture CreateFixtureWithSettings(byte[] settingsContent)
+        {
+            var files = new Dictionary<string, byte[]>
+            {
+                { "alcops.json", settingsContent }
+            };
+            var fileSystem = new MemoryFileSystem(files);
+
+            return RoslynFixtureFactory.Create<Analyzers.TranslatableTextShouldBeTranslated>(
+                new AnalyzerTestFixtureConfig
+                {
+                    FileSystem = fileSystem
+                });
+        }
+
+        private static AnalyzerTestFixture CreateFixtureWithXliffAndSettings(byte[] settingsContent)
+        {
+            var files = new Dictionary<string, byte[]>
+            {
+                { "Translations/TestApp.da-DK.xlf", EmptyXliffContent },
+                { "alcops.json", settingsContent }
+            };
             var fileSystem = new MemoryFileSystem(files);
 
             return RoslynFixtureFactory.Create<Analyzers.TranslatableTextShouldBeTranslated>(
@@ -121,16 +151,11 @@ namespace ALCops.LinterCop.Test
             RequireMinimumVersion("16.0",
                 "LC0091 requires net8.0 SDK APIs (ExtensionObjectFoldingUtilities, GetLabelTextConstLanguageSymbolId)");
 
-            ALCopsSettingsProvider.SetSettings("", new ALCopsSettings
-            {
-                LanguagesToTranslate = ["da-DK"]
-            });
-
             var code = await File.ReadAllTextAsync(
                 Path.Combine(_testCasePath, nameof(HasDiagnostic), $"{testCase}.al"))
                 .ConfigureAwait(false);
 
-            var fixture = CreateFixtureWithoutXliff();
+            var fixture = CreateFixtureWithSettings(SettingsWithDaDK);
             fixture.HasDiagnosticAtAllMarkers(code, DiagnosticIds.TranslatableTextShouldBeTranslated);
         }
 
@@ -141,16 +166,11 @@ namespace ALCops.LinterCop.Test
             RequireMinimumVersion("16.0",
                 "LC0091 requires net8.0 SDK APIs (ExtensionObjectFoldingUtilities, GetLabelTextConstLanguageSymbolId)");
 
-            ALCopsSettingsProvider.SetSettings("", new ALCopsSettings
-            {
-                LanguagesToTranslate = ["da-DK", "de-DE"]
-            });
-
             var code = await File.ReadAllTextAsync(
                 Path.Combine(_testCasePath, nameof(HasDiagnostic), $"{testCase}.al"))
                 .ConfigureAwait(false);
 
-            var fixture = CreateFixtureWithEmptyXliff();
+            var fixture = CreateFixtureWithXliffAndSettings(SettingsWithDaDKAndDeDE);
             fixture.HasDiagnosticAtAllMarkers(code, DiagnosticIds.TranslatableTextShouldBeTranslated);
         }
     }
