@@ -85,6 +85,7 @@ These cover conventions for a category of files. Include:
 | `cicd.instructions.md` | `'.github/**'` | CI/CD workflows and scripts |
 | `lc0095-use-partial-records-on-read.instructions.md` | `'src/ALCops.LinterCop/**/UsePartialRecordsOnRead*'` | LC0095 rule details |
 | `lc0096-unnecessary-record-parameter.instructions.md` | `'src/ALCops.LinterCop/**/UnnecessaryRecordParameterInMethodCall*'` | LC0096 rule details |
+| `lc0086-page-style-string-literal.instructions.md` | `'src/ALCops.LinterCop/**/PageStyleStringLiteral*'` | LC0086 rule details |
 | `lc0092-naming-pattern.instructions.md` | `'src/ALCops.LinterCop/**/NamingPattern*'` | LC0092 rule details |
 | `lc0091-translatable-text-should-be-translated.instructions.md` | `'src/ALCops.LinterCop/**/TranslatableTextShouldBeTranslated*'` | LC0091 rule details |
 | `pc0029-use-sequential-guid.instructions.md` | `'src/ALCops.PlatformCop/**/UseSequentialGuid*'` | PC0029 rule details |

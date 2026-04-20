@@ -19,8 +19,16 @@ public sealed class PageStyleStringLiteral : DiagnosticAnalyzer
     public override VersionCompatibility SupportedVersions =>
         VersionProvider.VersionCompatibility.Fall2024OrGreater;
 
+    // Case-SENSITIVE dictionary (StringComparer.Ordinal) to match only exact PascalCase StyleKind values.
+    // EnumProvider.StyleKind.CanonicalNames uses OrdinalIgnoreCase, which causes false positives
+    // on all-caps constants like 'STANDARD' or 'NONE' (see issue #183).
     private static readonly Lazy<ImmutableDictionary<string, string>> StyleKindCanonicalNames =
-        EnumProvider.StyleKind.CanonicalNames;
+        new(() => Enum.GetNames(typeof(Microsoft.Dynamics.Nav.CodeAnalysis.StyleKind))
+            .ToImmutableDictionary(
+                name => name,
+                name => name,
+                StringComparer.Ordinal),
+            LazyThreadSafetyMode.PublicationOnly);
 
     private static readonly Lazy<HashSet<NavTypeKind>> DataAccessNavTypeKinds = new(() =>
     [
