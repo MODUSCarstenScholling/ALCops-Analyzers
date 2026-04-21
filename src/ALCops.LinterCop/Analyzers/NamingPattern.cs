@@ -93,6 +93,12 @@ public sealed class NamingPattern : DiagnosticAnalyzer
         var target = ClassifyMethod(method);
         CheckName(ctx, method.Name, target, config, GetKindDisplayName(target));
 
+        // Skip parameter and return value checks for event subscribers.
+        // Subscriber parameters must match the publisher signature (AL0828);
+        // platform trigger params (xRec, BelowxRec, RunTrigger, etc.) can't be renamed.
+        if (target == NamingTarget.EventSubscriber)
+            return;
+
         // Check parameters
         foreach (var parameter in method.Parameters)
         {
@@ -157,23 +163,54 @@ public sealed class NamingPattern : DiagnosticAnalyzer
         if (ctx.IsObsolete())
             return;
 
+        // Skip controls on API objects (pages with PageType=API, queries with QueryType=API).
+        // API controls require camelCase per AA0102, which conflicts with the default PascalCase pattern.
+        if (IsInApiObject(ctx.Symbol))
+            return;
+
         CheckName(ctx, ctx.Symbol.Name, NamingTarget.Control, config, "Control");
+    }
+
+    private static bool IsInApiObject(ISymbol symbol)
+    {
+        var containingSymbol = symbol.ContainingSymbol;
+        while (containingSymbol is not null)
+        {
+            if (containingSymbol is IPageTypeSymbol pageType)
+                return pageType.PageType == EnumProvider.PageTypeKind.API;
+
+            if (containingSymbol is IQueryTypeSymbol queryType)
+                return queryType.QueryType == EnumProvider.QueryTypeKind.API;
+
+            containingSymbol = containingSymbol.ContainingSymbol;
+        }
+        return false;
     }
 
     private static void CheckName(SymbolAnalysisContext ctx, string name, NamingTarget target,
         NamingPatternConfig config, string kindDisplayName)
     {
-        if (string.IsNullOrEmpty(name))
+        if (string.IsNullOrWhiteSpace(name))
+            return;
+
+        // Strip & keyboard accelerator markers for action/control names.
+        // The & prefix designates keyboard shortcuts (e.g., "&Line" renders
+        // as underlined "L" for Alt+L). Only stripped for UI element names.
+        var nameForCheck = target is NamingTarget.Action or NamingTarget.Control
+            ? name.Replace("&", "")
+            : name;
+
+        if (string.IsNullOrWhiteSpace(nameForCheck))
             return;
 
         var resolved = config.GetPatterns(target);
 
         if (resolved.AllowRegex is not null)
         {
-            if (!TryIsMatch(resolved.AllowRegex, name))
+            if (!TryIsMatch(resolved.AllowRegex, nameForCheck))
             {
                 var message = BuildMessage(
-                    name, resolved.AllowPatternString, resolved.AllowDescription, isAllow: true);
+                    nameForCheck, resolved.AllowPatternString, resolved.AllowDescription, isAllow: true);
                 ctx.ReportDiagnostic(Diagnostic.Create(
                     DiagnosticDescriptors.NamingPattern,
                     ctx.Symbol.GetLocation(),
@@ -185,10 +222,10 @@ public sealed class NamingPattern : DiagnosticAnalyzer
 
         if (resolved.DisallowRegex is not null)
         {
-            if (TryIsMatch(resolved.DisallowRegex, name))
+            if (TryIsMatch(resolved.DisallowRegex, nameForCheck))
             {
                 var message = BuildMessage(
-                    name, resolved.DisallowPatternString, resolved.DisallowDescription, isAllow: false);
+                    nameForCheck, resolved.DisallowPatternString, resolved.DisallowDescription, isAllow: false);
                 ctx.ReportDiagnostic(Diagnostic.Create(
                     DiagnosticDescriptors.NamingPattern,
                     ctx.Symbol.GetLocation(),
@@ -264,8 +301,13 @@ public sealed class NamingPattern : DiagnosticAnalyzer
 
         if (isAllow)
         {
-            // ^[A-Z] - capitalize first character
-            if (patternString == @"^[A-Z]" && name.Length > 0 && char.IsLower(name[0]))
+            // ^[A-Z] or patterns with [A-Z] start - capitalize first character
+            if ((patternString == @"^[A-Z]"
+                || patternString == @"^(?:[A-Za-z]$|[A-Z])"
+                || patternString == @"^(?:[A-Za-z]$|[A-Z]|_[A-Z])"
+                || patternString == @"^(?:[A-Za-z]$|[A-Z]|x[A-Z])"
+                || patternString == @"^(?:[A-Za-z]$|[A-Z]|_[A-Z]|x[A-Z])")
+                && name.Length > 1 && char.IsLower(name[0]))
                 return char.ToUpperInvariant(name[0]) + name.Substring(1);
 
             // ^[a-z] - lowercase first character
@@ -335,13 +377,13 @@ public sealed class NamingPattern : DiagnosticAnalyzer
             if (name.StartsWith(affix, StringComparison.OrdinalIgnoreCase) &&
                 name.Length > affix.Length)
             {
-                return name.Substring(affix.Length);
+                return name.Substring(affix.Length).TrimStart();
             }
 
             if (name.EndsWith(affix, StringComparison.OrdinalIgnoreCase) &&
                 name.Length > affix.Length)
             {
-                return name.Substring(0, name.Length - affix.Length);
+                return name.Substring(0, name.Length - affix.Length).TrimEnd();
             }
         }
 
@@ -396,8 +438,8 @@ public sealed class NamingPattern : DiagnosticAnalyzer
         private static readonly Dictionary<NamingTarget, (string? Allow, string? Disallow, string? AllowDesc, string? DisallowDesc)> BuiltInDefaults = new()
         {
             [NamingTarget.Procedure] = (@"^[A-Z]", null, "should start with an uppercase letter", null),
-            [NamingTarget.Variable] = (@"^[A-Z]", @"[%&!?]", "should start with an uppercase letter", "should not contain special characters (%, &, !, ?)"),
-            [NamingTarget.Parameter] = (@"^[A-Z]", null, "should start with an uppercase letter", null),
+            [NamingTarget.Variable] = (@"^(?:[A-Za-z]$|[A-Z]|_[A-Z]|x[A-Z])", @"[%&!?]", "should start with an uppercase letter, underscore followed by uppercase, or x followed by uppercase for xRec pattern (single-letter names are exempt)", "should not contain special characters (%, &, !, ?)"),
+            [NamingTarget.Parameter] = (@"^(?:[A-Za-z]$|[A-Z]|_[A-Z]|x[A-Z])", null, "should start with an uppercase letter, underscore followed by uppercase, or x followed by uppercase for xRec pattern (single-letter names are exempt)", null),
             [NamingTarget.ReturnValue] = (@"^[A-Z]", null, "should start with an uppercase letter", null),
             [NamingTarget.Object] = (@"^[A-Z]", null, "should start with an uppercase letter", null),
             [NamingTarget.Field] = (@"^[A-Za-z]", @"[%&!?]", "should start with a letter", "should not contain special characters (%, &, !, ?)"),

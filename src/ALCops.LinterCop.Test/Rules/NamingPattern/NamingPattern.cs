@@ -45,6 +45,16 @@ namespace ALCops.LinterCop.Test
         [TestCase("TriggerMethod")]
         [TestCase("InterfaceImplementingMethod")]
         [TestCase("EventSubscriberPascalCase")]
+        [TestCase("EventSubscriberPlatformParams")]
+        [TestCase("EventSubscriberUserParams")]
+        [TestCase("ApiPageControlCamelCase")]
+        [TestCase("ActionAcceleratorKey")]
+        [TestCase("SingleLetterVariable")]
+        [TestCase("SingleLetterParameter")]
+        [TestCase("UnderscorePrefix")]
+        [TestCase("XRecVariable")]
+        [TestCase("XRecParameter")]
+        [TestCase("EnumValueBlankSpace")]
         [TestCase("ParameterPascalCase")]
         public async Task NoDiagnostic(string testCase)
         {

@@ -33,9 +33,13 @@ Validates names of procedures, variables, parameters, return values, objects, fi
 | Single diagnostic ID | LC0092 for all 13 naming targets | Simpler user experience; message differentiates targets |
 | Settings format | `NamingPatterns` dictionary in alcops.json | PascalCase keys, named per target |
 | Default behavior | Built-in MS convention defaults, user can override | Immediate value without configuration |
-| Object affixes | Strip AppSourceCop affixes before checking | Avoids false positives on prefixed/suffixed names |
+| Object affixes | Strip AppSourceCop affixes before checking, trim whitespace | Avoids false positives on prefixed/suffixed names; handles common `"PTE MyCodeunit"` pattern where space separates affix from name |
 | Skip triggers | Yes | Platform-defined names, can't rename |
 | Skip interface implementations | Yes | Name is dictated by the interface |
+| Skip event subscriber params | Yes | Subscriber parameters must match publisher signature (AL0828); platform trigger params (`xRec`, `BelowxRec`, `RunTrigger`, etc.) can't be renamed |
+| Skip API object controls | Yes | API page/query controls require camelCase per AA0102; the default PascalCase pattern would always conflict |
+| Skip whitespace-only names | Yes | `value(0; " ")` is a common "empty" enum value pattern; not a naming issue |
+| Strip `&` accelerator for Action/Control | Yes | `&` before a character in action/control/group names is a Windows UI keyboard accelerator prefix (Alt+key shortcut), inherited from classic NAV/C/SIDE. Not stripped for other targets so fields/variables still flag `&` via their disallow pattern. |
 | Skip obsolete | Yes | Standard ALCops convention |
 | netstandard2.1 | Full support | No net8.0-only APIs used |
 | Regex safety | 2-second timeout, catch ArgumentException and RegexMatchTimeoutException | Protects against ReDoS |
@@ -43,8 +47,11 @@ Validates names of procedures, variables, parameters, return values, objects, fi
 | Message UX | Four-tier strategy: description → suggestion → regex explainer → raw regex | Progressive enhancement; most users see human-readable messages |
 | Built-in descriptions | Hardcoded per default pattern | Best UX for out-of-box experience |
 | AllowDescription/DisallowDescription | Optional user-provided description fields in settings | Users can provide custom descriptions for their custom patterns |
-| Auto-suggestion | Pattern-specific name transformation | `^[A-Z]` capitalizes first char, `[%&!?]` removes disallowed chars |
+| Auto-suggestion | Pattern-specific name transformation | `^[A-Z]` capitalizes first char, `^(?:[A-Za-z]$\|[A-Z])` capitalizes first char for multi-char names only, `[%&!?]` removes disallowed chars |
 | RegexExplainer | Mini parser for common constructs (char classes, anchors) | Translates simple regex to English when no description available |
+| Single-letter variable/parameter names | Exempt from uppercase-start requirement | Common idiom (`i`, `j`, `k` for loops, `t` for text). Aligned with pylint `good-names`, ESLint `id-length`, Checkstyle `allowOneCharVarInForLoop`. Default pattern changed from `^[A-Z]` to `^(?:[A-Za-z]$\|[A-Z])` for Variable and Parameter targets |
+| Underscore prefix for variables/parameters | Allow `_` followed by PascalCase | C# convention used in AL for variable disambiguation when the name collides with a parameter or type. PascalCase enforced after `_` (`_Text` passes, `_text` fails) to stay consistent with AL conventions. Pattern: `_[A-Z]` added to Variable and Parameter defaults |
+| xRec prefix for variables/parameters | Allow `x` followed by PascalCase | Idiomatic AL convention for "previous record state" (e.g., `xSalesLine`). The platform uses `Rec`/`xRec`; developers extend this pattern to custom variables. Pattern: `x[A-Z]` added to Variable and Parameter defaults |
 
 ## Architecture
 
@@ -123,8 +130,8 @@ Pattern-specific name transformations:
 | Target | AllowPattern | DisallowPattern |
 |---|---|---|
 | Procedure | `^[A-Z]` | (none) |
-| Variable | `^[A-Z]` | `[%&!?]` |
-| Parameter | `^[A-Z]` | (none) |
+| Variable | `^(?:[A-Za-z]$\|[A-Z]\|_[A-Z]\|x[A-Z])` | `[%&!?]` |
+| Parameter | `^(?:[A-Za-z]$\|[A-Z]\|_[A-Z]\|x[A-Z])` | (none) |
 | ReturnValue | `^[A-Z]` | (none) |
 | Object | `^[A-Z]` | (none) |
 | Field | `^[A-Za-z]` | `[%&!?]` |
@@ -174,7 +181,7 @@ Invalid user-supplied patterns fail gracefully: `CompilePattern` catches `Argume
 | ActionLowerCaseStart | Page action starting with lowercase |
 | ControlLowerCaseStart | Page control (group) starting with lowercase |
 
-### NoDiagnostic (8 cases)
+### NoDiagnostic (13 cases)
 
 | Test case | Suppression reason |
 |---|---|
@@ -185,6 +192,16 @@ Invalid user-supplied patterns fail gracefully: `CompilePattern` catches `Argume
 | TriggerMethod | Trigger (skipped, platform-defined) |
 | InterfaceImplementingMethod | Interface implementation (skipped, can't rename) |
 | EventSubscriberPascalCase | Correctly named event subscriber |
+| EventSubscriberPlatformParams | Event subscriber with platform param `xRec` (skipped, params must match publisher) |
+| EventSubscriberUserParams | Event subscriber with user-defined lowercase param `myTable` matching publisher signature (skipped) |
+| ApiPageControlCamelCase | API page control with camelCase name (skipped, AA0102 requires camelCase) |
+| ActionAcceleratorKey | Action/group with `&` keyboard accelerator prefix (e.g., `"&Line"`, stripped before pattern matching) |
+| EnumValueBlankSpace | Enum value with whitespace-only name `" "` (skipped, common "empty" value pattern) |
+| SingleLetterVariable | Single-letter lowercase variable names (`i`, `t`, `x`) in procedure (exempt by default pattern) |
+| SingleLetterParameter | Single-letter lowercase parameter names (`i`, `t`) in procedure signature (exempt by default pattern) |
+| UnderscorePrefix | Variable names with underscore prefix followed by PascalCase (`_Text`, `_MyVariable`) |
+| XRecVariable | Local variable with xRec prefix (`xSalesLine: Record MyTable`) |
+| XRecParameter | Parameter with xRec prefix (`xSalesLine: Record MyTable`) |
 | ParameterPascalCase | Correctly named parameters |
 
 ## Phase 2 roadmap (not yet implemented)
