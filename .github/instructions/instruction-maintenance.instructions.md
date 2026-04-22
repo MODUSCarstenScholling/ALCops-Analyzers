@@ -84,11 +84,12 @@ These cover conventions for a category of files. Include:
 | `common-library.instructions.md` | `'src/ALCops.Common/**'` | Shared library guidelines |
 | `cicd.instructions.md` | `'.github/**'` | CI/CD workflows and scripts |
 | `release-strategy.instructions.md` | `'.github/**'` | Release channels, versioning, GitVersion config, cleanup |
-| `pc0030-use-partial-records-on-read.instructions.md` | `'src/ALCops.PlatformCop/**/UsePartialRecordsOnRead*'` | PC0030 rule details |
+| `pc0030-use-partial-records-on-read.instructions.md` | `'src/ALCops.PlatformCop/**/{UsePartialRecordsOnRead,PartialRecordOperations}*'` | PC0030 rule details |
 | `lc0096-unnecessary-record-parameter.instructions.md` | `'src/ALCops.LinterCop/**/UnnecessaryRecordParameterInMethodCall*'` | LC0096 rule details |
 | `lc0086-page-style-string-literal.instructions.md` | `'src/ALCops.LinterCop/**/PageStyleStringLiteral*'` | LC0086 rule details |
 | `lc0092-naming-pattern.instructions.md` | `'src/ALCops.LinterCop/**/NamingPattern*'` | LC0092 rule details |
 | `lc0091-translatable-text-should-be-translated.instructions.md` | `'src/ALCops.LinterCop/**/TranslatableTextShouldBeTranslated*'` | LC0091 rule details |
 | `pc0029-use-sequential-guid.instructions.md` | `'src/ALCops.PlatformCop/**/UseSequentialGuid*'` | PC0029 rule details |
+| `pc0031-partial-records-before-write-operation.instructions.md` | `'src/ALCops.PlatformCop/**/PartialRecordsBeforeWriteOperation*'` | PC0031 rule details |
 | `ac0026-allow-in-customizations-for-omitted-fields.instructions.md` | `'src/ALCops.ApplicationCop/**/AllowInCustomizationsForOmittedFields*'` | AC0026 rule details |
 | `ac0013-field-groups-required.instructions.md` | `'src/ALCops.ApplicationCop/**/FieldGroupsRequired*'` | AC0013 rule details |
