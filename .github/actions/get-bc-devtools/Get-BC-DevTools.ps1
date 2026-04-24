@@ -90,84 +90,64 @@ function Get-AssemblyInfo {
     param(
         [string]$AssemblyPath
     )
-    
-    try {
-        # First try to use Cecil or other metadata readers if available, but fallback to reflection
-        # Load assembly metadata without loading the assembly into the current AppDomain
-        $bytes = [System.IO.File]::ReadAllBytes($AssemblyPath)
-        
-        try {
-            # Try to load as reflection-only first
-            $assembly = [System.Reflection.Assembly]::ReflectionOnlyLoad($bytes)
-        }
-        catch {
-            # Fallback to regular load
-            $assembly = [System.Reflection.Assembly]::Load($bytes)
-        }
-        
-        # Get Assembly Version
-        $assemblyVersion = $assembly.GetName().Version.ToString()
-        
-        # Try to get TargetFrameworkAttribute
-        $customAttributes = $assembly.GetCustomAttributesData()
-        $targetFrameworkAttr = $customAttributes | Where-Object { 
-            $_.AttributeType.Name -eq 'TargetFrameworkAttribute' 
-        }
-        
-        $targetFramework = "unknown"
-        if ($targetFrameworkAttr) {
-            $frameworkName = $targetFrameworkAttr.ConstructorArguments[0].Value
-            
-            # Parse the framework name to extract just the target framework moniker
-            if ($frameworkName -match '\.NETStandard,Version=v(.+)') {
-                $targetFramework = "netstandard$($matches[1])"
-            }
-            elseif ($frameworkName -match '\.NETCoreApp,Version=v(.+)') {
-                $targetFramework = "net$($matches[1])"
-            }
-            elseif ($frameworkName -match '\.NETFramework,Version=v(.+)') {
-                $version = $matches[1] -replace '\.', ''
-                $targetFramework = "net$version"
-            }
-            else {
-                # Return a cleaned version of the framework name
-                $targetFramework = $frameworkName -replace '\.NET|,Version=v', '' -replace '\.', ''
-            }
-        }
-        else {
-            # Alternative: try to get from AssemblyMetadataAttribute
-            $metadataAttrs = $customAttributes | Where-Object { 
-                $_.AttributeType.Name -eq 'AssemblyMetadataAttribute' 
-            }
-            
-            foreach ($attr in $metadataAttrs) {
-                $key = $attr.ConstructorArguments[0].Value
-                $value = $attr.ConstructorArguments[1].Value
-                if ($key -eq 'TargetFramework') {
-                    $targetFramework = $value
-                    break
-                }
-            }
-        }
 
-        # Last-resort fallback: some assemblies (e.g. older BC BCArtifact builds) are compiled
-        # without emitting TargetFrameworkAttribute at all. Infer the TFM from the referenced
-        # assemblies instead — a reference to 'netstandard' reliably identifies netstandard2.0
-        # builds, and a reference to 'System.Runtime' with no netstandard reference indicates net8.0+.
-        if ($targetFramework -eq 'unknown') {
-            $refNames = $assembly.GetReferencedAssemblies() | ForEach-Object { $_.Name }
-            $netstdRef = $assembly.GetReferencedAssemblies() | Where-Object { $_.Name -eq 'netstandard' }
-            if ($netstdRef) {
-                $targetFramework = "netstandard$($netstdRef.Version.Major).$($netstdRef.Version.Minor)"
+    try {
+        # Use System.Reflection.Metadata to read PE metadata without loading the assembly
+        # into the runtime. This avoids cross-runtime failures (e.g. net10.0 DLL on a net8.0 host).
+        $stream = [System.IO.File]::OpenRead($AssemblyPath)
+        try {
+            $peReader = [System.Reflection.PortableExecutable.PEReader]::new($stream)
+            $mdReader = [System.Reflection.Metadata.PEReaderExtensions]::GetMetadataReader($peReader)
+
+            # Assembly version
+            $asmDef = $mdReader.GetAssemblyDefinition()
+            $assemblyVersion = $asmDef.Version.ToString()
+
+            # Walk custom attributes on the assembly to find TargetFrameworkAttribute
+            $targetFramework = 'unknown'
+            foreach ($attrHandle in $asmDef.GetCustomAttributes()) {
+                $attr = $mdReader.GetCustomAttribute($attrHandle)
+
+                # Resolve the attribute type name
+                $ctorHandle = $attr.Constructor
+                $typeName = $null
+                if ($ctorHandle.Kind -eq [System.Reflection.Metadata.HandleKind]::MemberReference) {
+                    $memberRef = $mdReader.GetMemberReference([System.Reflection.Metadata.MemberReferenceHandle]$ctorHandle)
+                    $parentHandle = $memberRef.Parent
+                    if ($parentHandle.Kind -eq [System.Reflection.Metadata.HandleKind]::TypeReference) {
+                        $typeRef = $mdReader.GetTypeReference([System.Reflection.Metadata.TypeReferenceHandle]$parentHandle)
+                        $typeName = $mdReader.GetString($typeRef.Name)
+                    }
+                }
+
+                if ($typeName -ne 'TargetFrameworkAttribute') { continue }
+
+                # Decode the fixed-length string argument from the attribute blob
+                $blobReader = $mdReader.GetBlobReader($attr.Value)
+                $blobReader.ReadUInt16() | Out-Null   # skip prolog (0x0001)
+                $frameworkName = $blobReader.ReadSerializedString()
+
+                if ($frameworkName -match '\.NETStandard,Version=v(.+)') {
+                    $targetFramework = "netstandard$($matches[1])"
+                }
+                elseif ($frameworkName -match '\.NETCoreApp,Version=v(.+)') {
+                    $targetFramework = "net$($matches[1])"
+                }
+                elseif ($frameworkName -match '\.NETFramework,Version=v(.+)') {
+                    $version = $matches[1] -replace '\.', ''
+                    $targetFramework = "net$version"
+                }
+                break
             }
-            elseif ('System.Runtime' -in $refNames) {
-                $targetFramework = 'net8.0'
+
+            return [PSCustomObject]@{
+                TargetFramework = $targetFramework
+                Version         = $assemblyVersion
             }
         }
-        
-        return [PSCustomObject]@{
-            TargetFramework = $targetFramework
-            Version         = $assemblyVersion
+        finally {
+            if ($peReader) { $peReader.Dispose() }
+            $stream.Dispose()
         }
     }
     catch {
@@ -269,19 +249,41 @@ function Get-AssetInfo {
         }
     }
 
-    # Determine the archive-internal folder and the full entry path for the target DLL
+    # Determine the archive-internal folder and the full entry path for the target DLL.
+    # For NuGet, try net8.0 first; fall back to net10.0 if the entry isn't found.
+    $nugetTfmPaths = @('tools/net8.0/any', 'tools/net10.0/any')
     $pathInArchive = switch ($PackageType) {
         'VSIX' { 'extension/bin/Analyzers' }
-        'NuGet' { 'tools/net8.0/any' }
+        'NuGet' { $nugetTfmPaths[0] }
         default { throw "Unknown asset type: $PackageType" }
     }
-    $entryPath = "$pathInArchive/Microsoft.Dynamics.Nav.Analyzers.Common.dll"
     $dllPath = Join-Path $TempDirectory 'Microsoft.Dynamics.Nav.Analyzers.Common.dll'
 
     try {
-        # HTTP Range Requests: download only the target DLL from the remote archive
         $rangeScript = Join-Path (Split-Path $PSScriptRoot -Parent) 'shared\Get-RemoteZipEntry.ps1'
-        & $rangeScript -Uri $uri -EntryPath $entryPath -OutputPath $dllPath
+
+        if ($PackageType -eq 'NuGet') {
+            # Try each known NuGet TFM path until one succeeds
+            $extracted = $false
+            foreach ($tfmPath in $nugetTfmPaths) {
+                $entryPath = "$tfmPath/Microsoft.Dynamics.Nav.Analyzers.Common.dll"
+                try {
+                    & $rangeScript -Uri $uri -EntryPath $entryPath -OutputPath $dllPath
+                    $extracted = $true
+                    break
+                }
+                catch {
+                    # Entry not found at this TFM path, try next
+                }
+            }
+            if (-not $extracted) {
+                throw "Microsoft.Dynamics.Nav.Analyzers.Common.dll not found in NuGet package at any known TFM path: $($nugetTfmPaths -join ', ')"
+            }
+        }
+        else {
+            $entryPath = "$pathInArchive/Microsoft.Dynamics.Nav.Analyzers.Common.dll"
+            & $rangeScript -Uri $uri -EntryPath $entryPath -OutputPath $dllPath
+        }
 
         $assemblyInfo = Get-AssemblyInfo -AssemblyPath $dllPath
         return $assemblyInfo
