@@ -151,17 +151,23 @@ function Get-AssemblyInfo {
         }
 
         # Last-resort fallback: some assemblies (e.g. older BC BCArtifact builds) are compiled
-        # without emitting TargetFrameworkAttribute at all. Infer the TFM from the referenced
-        # assemblies instead — a reference to 'netstandard' reliably identifies netstandard2.0
-        # builds, and a reference to 'System.Runtime' with no netstandard reference indicates net8.0+.
+        # without emitting TargetFrameworkAttribute at all, or the attribute could not be read
+        # (e.g. .NET 10 assemblies inspected from a .NET 8 host).
+        # Infer the TFM from the referenced assemblies instead:
+        # - A reference to 'netstandard' identifies netstandard builds.
+        # - A reference to 'System.Runtime' indicates a .NET Core/.NET 5+ build;
+        #   derive the TFM from its major version (e.g. 8→net8.0, 10→net10.0).
         if ($targetFramework -eq 'unknown') {
             $refNames = $assembly.GetReferencedAssemblies() | ForEach-Object { $_.Name }
             $netstdRef = $assembly.GetReferencedAssemblies() | Where-Object { $_.Name -eq 'netstandard' }
             if ($netstdRef) {
                 $targetFramework = "netstandard$($netstdRef.Version.Major).$($netstdRef.Version.Minor)"
             }
-            elseif ('System.Runtime' -in $refNames) {
-                $targetFramework = 'net8.0'
+            else {
+                $sysRuntimeRef = $assembly.GetReferencedAssemblies() | Where-Object { $_.Name -eq 'System.Runtime' }
+                if ($sysRuntimeRef) {
+                    $targetFramework = "net$($sysRuntimeRef.Version.Major).0"
+                }
             }
         }
         
@@ -269,19 +275,41 @@ function Get-AssetInfo {
         }
     }
 
-    # Determine the archive-internal folder and the full entry path for the target DLL
+    # Determine the archive-internal folder and the full entry path for the target DLL.
+    # For NuGet, try net8.0 first; fall back to net10.0 if the entry isn't found.
+    $nugetTfmPaths = @('tools/net8.0/any', 'tools/net10.0/any')
     $pathInArchive = switch ($PackageType) {
         'VSIX' { 'extension/bin/Analyzers' }
-        'NuGet' { 'tools/net8.0/any' }
+        'NuGet' { $nugetTfmPaths[0] }
         default { throw "Unknown asset type: $PackageType" }
     }
-    $entryPath = "$pathInArchive/Microsoft.Dynamics.Nav.Analyzers.Common.dll"
     $dllPath = Join-Path $TempDirectory 'Microsoft.Dynamics.Nav.Analyzers.Common.dll'
 
     try {
-        # HTTP Range Requests: download only the target DLL from the remote archive
         $rangeScript = Join-Path (Split-Path $PSScriptRoot -Parent) 'shared\Get-RemoteZipEntry.ps1'
-        & $rangeScript -Uri $uri -EntryPath $entryPath -OutputPath $dllPath
+
+        if ($PackageType -eq 'NuGet') {
+            # Try each known NuGet TFM path until one succeeds
+            $extracted = $false
+            foreach ($tfmPath in $nugetTfmPaths) {
+                $entryPath = "$tfmPath/Microsoft.Dynamics.Nav.Analyzers.Common.dll"
+                try {
+                    & $rangeScript -Uri $uri -EntryPath $entryPath -OutputPath $dllPath
+                    $extracted = $true
+                    break
+                }
+                catch {
+                    # Entry not found at this TFM path, try next
+                }
+            }
+            if (-not $extracted) {
+                throw "Microsoft.Dynamics.Nav.Analyzers.Common.dll not found in NuGet package at any known TFM path: $($nugetTfmPaths -join ', ')"
+            }
+        }
+        else {
+            $entryPath = "$pathInArchive/Microsoft.Dynamics.Nav.Analyzers.Common.dll"
+            & $rangeScript -Uri $uri -EntryPath $entryPath -OutputPath $dllPath
+        }
 
         $assemblyInfo = Get-AssemblyInfo -AssemblyPath $dllPath
         return $assemblyInfo

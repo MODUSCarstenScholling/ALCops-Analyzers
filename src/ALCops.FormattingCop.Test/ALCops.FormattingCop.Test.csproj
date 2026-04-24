@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
-        <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
@@ -13,14 +12,18 @@
         <DefineConstants Condition="'$(FeatureFlags)'!=''">$(DefineConstants);$([System.String]::Copy('$(FeatureFlags)').Replace('#',';'))</DefineConstants>
 
         <!-- Input knobs -->
-        <NavTargetFramework Condition="'$(NavTargetFramework)'==''">net8.0</NavTargetFramework>
+        <NavTargetFramework Condition="'$(NavTargetFramework)'==''">net10.0</NavTargetFramework>
 
          <!-- Derived booleans -->
         <IsLegacyNavTfm Condition="'$(NavTargetFramework)'=='netstandard2.0' Or '$(NavTargetFramework)'=='netstandard2.1'">true</IsLegacyNavTfm>
 
+        <!-- TargetFramework: follows NavTargetFramework for modern TFMs; legacy tests compile as net10.0 -->
+        <TargetFramework Condition="'$(IsLegacyNavTfm)'!='true'">$(NavTargetFramework)</TargetFramework>
+        <TargetFramework Condition="'$(IsLegacyNavTfm)'=='true'">net10.0</TargetFramework>
+
         <!-- Normalized TFM used for binary refs -->
         <NavBinaryTfm Condition="'$(IsLegacyNavTfm)'=='true'">netstandard2.1</NavBinaryTfm>
-        <NavBinaryTfm Condition="'$(IsLegacyNavTfm)'!='true'">net8.0</NavBinaryTfm>
+        <NavBinaryTfm Condition="'$(IsLegacyNavTfm)'!='true'">$(NavTargetFramework)</NavBinaryTfm>
 
         <!-- Path to BC dev tools may be overridden by /p:BcDevToolsDir= -->
         <BcDevToolsDir Condition="'$(BcDevToolsDir)'==''">../../Microsoft.Dynamics.BusinessCentral.Development.Tools</BcDevToolsDir>
@@ -58,7 +61,7 @@
 
     <!-- RoslynTestKit -->
     <ItemGroup Condition="'$(IsLegacyNavTfm)'!='true'">
-        <PackageReference Include="ALCops.RoslynTestKit" Version="1.0.0" />
+        <PackageReference Include="ALCops.RoslynTestKit" Version="1.1.0" />
     </ItemGroup>
 
     <!-- On legacy NAV TFMs, suppress package assets and directly reference the netstandard2.1 DLL -->
