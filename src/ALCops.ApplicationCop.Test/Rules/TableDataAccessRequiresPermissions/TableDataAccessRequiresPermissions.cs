@@ -22,6 +22,10 @@ namespace ALCops.ApplicationCop.Test
 
         [Test]
         [TestCase("ProcedureCalls")]
+        [TestCase("ProcedureCallsExtended")]
+        [TestCase("GetBySystemId")]
+        [TestCase("Count")]
+        [TestCase("ImplicitSelfCallInTable")]
         [TestCase("XmlPorts")]
         [TestCase("Queries")]
         [TestCase("Reports")]
@@ -52,6 +56,10 @@ namespace ALCops.ApplicationCop.Test
         [TestCase("PermissionPropertyWithPragma")]
         [TestCase("PermissionPropertyWithComment")]
         [TestCase("MultiplePermissionsDifferentType")]
+        [TestCase("TestPermissionsDisabled")]
+        [TestCase("GetBySystemIdWithPermissions")]
+        [TestCase("CountWithPermissions")]
+        [TestCase("ImplicitSelfCallWithInherentPermissions")]
         public async Task NoDiagnostic(string testCase)
         {
             SkipTestIfVersionIsTooLow(
@@ -66,27 +74,32 @@ namespace ALCops.ApplicationCop.Test
             _fixture.NoDiagnosticAtAllMarkers(code, DiagnosticIds.TableDataAccessRequiresPermissions);
         }
 
-        // [Test]
-        // [TestCase("PageRunModelPageIdentifierAndRecord")]
-        // [TestCase("PageRunModelPageIdentifierAndRecordWithPageFIeld")]
-        // [TestCase("PageRunPageIdentifierAndRecord")]
-        // [TestCase("PageRunPageIdentifierAndRecordWithPageField")]
-        // [TestCase("PageRunZeroIdentifierAndRecord")]
-        // public async Task HasFix(string testCase)
-        // {
-        //     var currentCode = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(HasFix), testCase, "current.al"))
-        //         .ConfigureAwait(false);
+        [Test]
+        [TestCase("AddNewPermissionsProperty")]
+        [TestCase("AddNewTableEntry")]
+        [TestCase("MergePermissionChar")]
+        [TestCase("MergeCanonicalOrder")]
+        [TestCase("AddEntryMultiLine")]
+        [TestCase("AddEntrySingleLine")]
+        [TestCase("AddEntryAlphabetical")]
+        [TestCase("AddEntryAppend")]
+        public async Task HasFix(string testCase)
+        {
+            var currentCode = await File.ReadAllTextAsync(
+                Path.Combine(_testCasePath, nameof(HasFix), testCase, "current.al"))
+                .ConfigureAwait(false);
 
-        //     var expectedCode = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(HasFix), testCase, "expected.al"))
-        //         .ConfigureAwait(false);
+            var expectedCode = await File.ReadAllTextAsync(
+                Path.Combine(_testCasePath, nameof(HasFix), testCase, "expected.al"))
+                .ConfigureAwait(false);
 
-        //     var fixture = RoslynFixtureFactory.Create<TableDataAccessRequiresPermissionsCodeFixProvider>(
-        //         new CodeFixTestFixtureConfig
-        //         {
-        //             AdditionalAnalyzers = [_analyzer]
-        //         });
+            var fixture = RoslynFixtureFactory.Create<TableDataAccessRequiresPermissionsCodeFixProvider>(
+                new CodeFixTestFixtureConfig
+                {
+                    AdditionalAnalyzers = [_analyzer]
+                });
 
-        //     fixture.TestCodeFix(currentCode, expectedCode, DiagnosticDescriptors.NotBlankRequiredOnPrimaryKeyField);
-        // }
+            fixture.TestCodeFix(currentCode, expectedCode, DiagnosticDescriptors.TableDataAccessRequiresPermissions);
+        }
     }
 }
