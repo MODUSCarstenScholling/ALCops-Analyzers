@@ -494,38 +494,21 @@ See `testing.instructions.md` for the full testing guide. CodeFix-specific detai
 - `fixture.TestCodeFix()` verifies the transformation from current to expected code
 - Test cases live in `HasFix/<TestCaseName>/` with `current.al` (with `[|...|]` marker) and `expected.al`
 
-## Existing implementations reference
+## Reference implementations by pattern
 
-| Cop | File | Diagnostic | Fix type |
-|---|---|---|---|
-| PlatformCop | `EditableFlowField.cs` | PC0001 | Add/update `Editable = false` property |
-| PlatformCop | `GuidEmptyStringComparison.cs` | PC0015 | Replace `guid == ''` with `System.IsNullGuid(guid)` |
-| PlatformCop | `EventSubscriberVarKeyword.cs` | PC0010 | Add `var` keyword to parameter |
-| PlatformCop | `EventPublisherIsHandledByVar.cs` | PC0009 | Add `var` keyword to IsHandled parameter |
-| PlatformCop | `ExtensiblePropertyExplicitlySet.cs` | PC0012 | Set Extensible property |
-| PlatformCop | `JsonTokenJPathUsesDoubleQuotes.cs` | PC0016 | Replace double quotes with single quotes in JPath |
-| PlatformCop | `SetRangeWithFilterOperators.cs` | PC0003 | Replace SetRange with SetFilter |
-| PlatformCop | `FilterStringSingleQuoteEscaping.cs` | PC0019 | Fix quote escaping in filter strings |
-| PlatformCop | `OperatorAndPlaceholderInFilterExpression.cs` | PC0017 | Fix filter expression operators |
-| PlatformCop | `MandatoryFieldMissingOnApiPage.cs` | PC0022 | Add mandatory field to API page |
-| PlatformCop | `ApplicationAreaOnApiPage.cs` | PC0013 | Remove ApplicationArea from API page |
-| PlatformCop | `PossibleOverflowAssigningAppendMaxLengthToLabel.cs` | PC0024 | Apply MaxLength/CopyStr to prevent overflow |
-| PlatformCop | `PossibleOverflowAssigningApplyCopyStr.cs` | PC0024 | Apply CopyStr to prevent overflow |
-| ApplicationCop | `EmptyCaptionLocked.cs` | AC0033 | Add `Locked = true` to empty caption |
-| ApplicationCop | `LabelWithTokSuffixMustBeLocked.cs` | AC0017 | Add `Locked = true` to Tok-suffixed label |
-| ApplicationCop | `InstallAndUpgradeCodeunitsShouldBeInternal.cs` | AC0011 | Add `Access = Internal` |
-| ApplicationCop | `PublicEventPublisher.cs` | AC0040 | Change event publisher access |
-| ApplicationCop | `NotBlankRequiredOnPrimaryKeyField.cs` | AC0043 | Add NotBlank to PK field |
-| ApplicationCop | `NotBlankNotAllowedOnPrimaryKeyField.cs` | AC0044 | Remove NotBlank from PK field |
-| ApplicationCop | `PermissionSetCaptionLength.cs` | AC0012 | Truncate PermissionSet caption |
-| ApplicationCop | `GlobalLanguageImplementTranslationHelper.cs` | AC0022 | Replace GlobalLanguage with TranslationHelper |
-| ApplicationCop | `RunPageImplementPageManagement.cs` | AC0024 | Replace RunPage with PageManagement |
-| ApplicationCop | `IntegrationEventsInInternalCodeunit*.cs` | AC0029 | Two fixes: remove internal access or convert event type |
-| FormattingCop | `UseParenthesisForFunctionCall.cs` | FC0009 | Add `()` to function calls |
-| FormattingCop | `CasingMismatchKeyword.cs` | FC0004 | Fix keyword casing via text replacement |
-| LinterCop | `AllowInCustomizationsRedundancy.cs` | LC0024 | Remove redundant AllowInCustomizations property |
-| LinterCop | `DataClassificationRedundancy.cs` | LC0025 | Remove redundant DataClassification property |
-| LinterCop | `ApplicationAreaRedundancy.cs` | LC0026 | Remove redundant ApplicationArea property |
-| LinterCop | `RecordInstanceIsolationLevel.cs` | LC0005 | Replace `LockTable()` with `ReadIsolation()` |
-| LinterCop | `BuiltInDateTimeMethod.cs` | LC0022 | Replace deprecated DateTime method |
-| LinterCop | `ObjectIdInDeclaration.cs` | LC0030 | Replace numeric object ID with name reference |
+When writing a new CodeFix, find an existing one that uses the same technique. Use `ls src/*/CodeFixes/` to discover all CodeFix files.
+
+| Pattern | Good reference | What it demonstrates |
+|---|---|---|
+| Add/set a property | `EditableFlowField.cs` (PlatformCop) | Insert or update a property on a syntax node |
+| Remove a property | `AllowInCustomizationsRedundancy.cs` (LinterCop) | Delete a property and clean up trivia |
+| Add a keyword/token | `EventSubscriberVarKeyword.cs` (PlatformCop) | Insert a keyword into a parameter list |
+| Replace an expression | `GuidEmptyStringComparison.cs` (PlatformCop) | Swap one expression for another |
+| Replace a method call | `SetRangeWithFilterOperators.cs` (PlatformCop) | Rewrite a method invocation with different method/args |
+| Rewrite a string literal | `JsonTokenJPathUsesDoubleQuotes.cs` (PlatformCop) | Text manipulation within a string token |
+| Add syntax tokens | `UseParenthesisForFunctionCall.cs` (FormattingCop) | Insert tokens (parentheses) into existing syntax |
+| Reorder/rebuild a property value | `PermissionDeclarationOrderCodeFixProvider.cs` (FormattingCop) | Sort entries, rebuild multi-line `PermissionPropertyValue` |
+| Add entries to a list property | `TableDataAccessRequiresPermissions.cs` (ApplicationCop) | Insert into existing list, handle alphabetical insertion |
+| Remove entries from a list property | `TableDataAccessUnusedPermissionsCodeFixProvider.cs` (ApplicationCop) | Remove specific entries, handle cleanup of entire property |
+| Two alternative fixes for one diagnostic | `IntegrationEventsInInternalCodeunit*.cs` (ApplicationCop) | Two CodeFix classes sharing one diagnostic ID |
+| Complex multi-node rewrite | `PossibleOverflowAssigningApplyCopyStr.cs` (PlatformCop) | Wrap expressions in function calls, handle multiple overload shapes |
