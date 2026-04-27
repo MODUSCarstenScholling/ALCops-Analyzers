@@ -1,4 +1,4 @@
-name: Buld and Release
+name: Build and Release
 
 # Release channels:
 #   Alpha  - auto on every push to main            (1.0.0-alpha.1, 1.0.0-alpha.2, ...)

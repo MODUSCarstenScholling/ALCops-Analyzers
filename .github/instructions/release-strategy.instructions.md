@@ -120,6 +120,8 @@ Fix bugs by creating PRs to the release branch. Each merge can be published as a
 
 ### 4. Create the stable release
 
+> **Warning**: The tagged commit's message must **not** contain `[skip ci]`, `[ci skip]`, or similar directives. GitHub Actions honors these for all push events, including tag pushes, and the workflow will silently not trigger. If the HEAD commit has `[skip ci]`, create a new commit (e.g., a trivial fix or `--allow-empty`) before tagging.
+
 ```bash
 git checkout release/v0.7.0
 git tag v0.7.0
