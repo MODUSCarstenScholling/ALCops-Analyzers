@@ -22,8 +22,16 @@ namespace ALCops.PlatformCop.Test
 
         [Test]
         [TestCase("SelectToken")]
+        [TestCase("SelectTokens")]
         public async Task HasDiagnostic(string testCase)
         {
+            SkipTestIfVersionIsTooLow(
+                ["SelectTokens"],
+                testCase,
+                "17.0",
+                "SelectTokens is available with runtime version 17.0."
+            );
+
             var code = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(HasDiagnostic), $"{testCase}.al"))
                 .ConfigureAwait(false);
 
@@ -32,8 +40,16 @@ namespace ALCops.PlatformCop.Test
 
         [Test]
         [TestCase("SelectToken")]
+        [TestCase("SelectTokens")]
         public async Task NoDiagnostic(string testCase)
         {
+            SkipTestIfVersionIsTooLow(
+                ["SelectTokens"],
+                testCase,
+                "17.0",
+                "SelectTokens is available with runtime version 17.0."
+            );
+
             var code = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(NoDiagnostic), $"{testCase}.al"))
                 .ConfigureAwait(false);
 
@@ -42,8 +58,16 @@ namespace ALCops.PlatformCop.Test
 
         [Test]
         [TestCase("SelectToken")]
+        [TestCase("SelectTokens")]
         public async Task HasFix(string testCase)
         {
+            SkipTestIfVersionIsTooLow(
+                ["SelectTokens"],
+                testCase,
+                "17.0",
+                "SelectTokens is available with runtime version 17.0."
+            );
+
             var currentCode = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(HasFix), testCase, "current.al"))
                 .ConfigureAwait(false);
 
