@@ -22,8 +22,6 @@ public sealed class DuplicateODataEntityName : DiagnosticAnalyzer
         EnumProvider.PageTypeKind.Worksheet
     ];
 
-    private static ImmutableArray<IPageExtensionBaseTypeSymbol> GetCachedPageExtensions(Compilation compilation)
-        => PageExtensionsCache.GetValue(compilation, static c => new PageExtensionsCacheEntry(c)).Value.Value;
     private static readonly ConditionalWeakTable<Compilation, PageExtensionsCacheEntry> PageExtensionsCache = new();
     private sealed class PageExtensionsCacheEntry(Compilation compilation)
     {
@@ -64,21 +62,6 @@ public sealed class DuplicateODataEntityName : DiagnosticAnalyzer
         }
     }
 
-    private static void AnalyzePage(SymbolAnalysisContext ctx, IPageBaseTypeSymbol page)
-    {
-        if (!RelevantPageTypes.Contains(page.PageType))
-            return;
-
-        var controlEntries = CollectFieldControlEntries(page.FlattenedControls);
-        var pkEntries = CollectPrimaryKeyEntries(page.RelatedTable);
-
-        var allEntries = new List<ODataNameEntry>(controlEntries.Count + pkEntries.Count);
-        allEntries.AddRange(controlEntries);
-        allEntries.AddRange(pkEntries);
-
-        ReportDuplicates(ctx, allEntries, reportableFilter: null);
-    }
-
     private static void AnalyzePageExtension(SymbolAnalysisContext ctx, IPageExtensionBaseTypeSymbol pageExtension)
     {
         var targetPage = pageExtension.Target?.OriginalDefinition as IPageBaseTypeSymbol;
@@ -92,7 +75,6 @@ public sealed class DuplicateODataEntityName : DiagnosticAnalyzer
         var baseControls = CollectFieldControlEntries(targetPage.FlattenedControls);
         var pkEntries = CollectPrimaryKeyEntries(targetPage.RelatedTable);
 
-        // Collect controls from sibling page extensions targeting the same base page
         var siblingControls = CollectSiblingExtensionControls(ctx, pageExtension, targetPage);
 
         var allEntries = new List<ODataNameEntry>(
@@ -108,6 +90,9 @@ public sealed class DuplicateODataEntityName : DiagnosticAnalyzer
 
         ReportDuplicates(ctx, allEntries, reportableFilter: entry => entry.Control is not null && extensionControlSet.Contains(entry.Control));
     }
+
+    private static ImmutableArray<IPageExtensionBaseTypeSymbol> GetCachedPageExtensions(Compilation compilation)
+        => PageExtensionsCache.GetValue(compilation, static c => new PageExtensionsCacheEntry(c)).Value.Value;
 
     private static List<ODataNameEntry> CollectSiblingExtensionControls(
         SymbolAnalysisContext ctx,
@@ -134,7 +119,6 @@ public sealed class DuplicateODataEntityName : DiagnosticAnalyzer
                 if (odataName is null)
                     continue;
 
-                // Use null Control so sibling controls are not reportable
                 entries.Add(new ODataNameEntry(odataName, control.Name, control.GetLocation(), null));
             }
         }
@@ -157,6 +141,24 @@ public sealed class DuplicateODataEntityName : DiagnosticAnalyzer
             return lId.Id == rId.Id && source.Kind == target.Kind;
 
         return source.Equals(target);
+    }
+
+    private static void AnalyzePage(SymbolAnalysisContext ctx, IPageBaseTypeSymbol page)
+    {
+        if (!RelevantPageTypes.Contains(page.PageType))
+            return;
+
+        var controlEntries = CollectFieldControlEntries(page.FlattenedControls);
+        var pkEntries = CollectPrimaryKeyEntries(page.RelatedTable);
+
+        var allEntries = new List<ODataNameEntry>(controlEntries.Count + pkEntries.Count);
+        allEntries.AddRange(controlEntries);
+        allEntries.AddRange(pkEntries);
+
+        // Only report on controls (not PK fields) - PK fields from external dependencies
+        // have locations that crash the AL Language Extension host when reported.
+        // PK entries still participate in duplicate detection.
+        ReportDuplicates(ctx, allEntries, reportableFilter: entry => entry.Control is not null);
     }
 
     private static List<ODataNameEntry> CollectFieldControlEntries(ImmutableArray<IControlSymbol> controls)
@@ -217,7 +219,6 @@ public sealed class DuplicateODataEntityName : DiagnosticAnalyzer
             }
         }
     }
-
 
 #if NETSTANDARD2_1
     private readonly struct ODataNameEntry
