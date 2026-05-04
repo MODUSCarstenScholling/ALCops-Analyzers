@@ -13,9 +13,9 @@ public static class PermissionSyntaxHelper
     private const string CanonicalOrder = MethodOperationMap.CanonicalOrder;
 
     /// <summary>
-    /// Checks whether the permission entries are sorted alphabetically by
-    /// (type keyword, object name), both case-insensitive.
-    /// Returns true if 0 or 1 entries (trivially sorted).
+    /// Checks whether the permission entries are sorted using AZ Dev Tools-compatible ordering:
+    /// table/tabledata types first (grouped by name), remaining types alphabetically by type, then by name.
+    /// Names use natural/alphanumeric comparison. Returns true if 0 or 1 entries (trivially sorted).
     /// </summary>
     public static bool ArePermissionsSorted(SeparatedSyntaxList<PermissionSyntax> permissions)
     {
@@ -33,11 +33,8 @@ public static class PermissionSyntaxHelper
 
             if (previousType is not null && previousName is not null)
             {
-                int typeCompare = string.Compare(previousType, type, StringComparison.OrdinalIgnoreCase);
-                if (typeCompare > 0)
-                    return false;
-                if (typeCompare == 0 &&
-                    string.Compare(previousName, name, StringComparison.OrdinalIgnoreCase) > 0)
+                int cmp = ComparePermissionEntries(previousType, previousName, type, name);
+                if (cmp > 0)
                     return false;
             }
 
@@ -127,7 +124,7 @@ public static class PermissionSyntaxHelper
 
     /// <summary>
     /// Finds the insertion index for a new entry in a sorted permission list,
-    /// comparing by (type keyword, object name). The new entry type defaults to "tabledata"
+    /// using AZ Dev Tools-compatible ordering. The new entry type defaults to "tabledata"
     /// since AC0031 only inserts tabledata entries.
     /// If not sorted, returns the count (append).
     /// </summary>
@@ -144,10 +141,8 @@ public static class PermissionSyntaxHelper
             if (entryType is null || entryName is null)
                 continue;
 
-            int typeCompare = string.Compare(newType, entryType, StringComparison.OrdinalIgnoreCase);
-            if (typeCompare < 0)
-                return i;
-            if (typeCompare == 0 && string.Compare(tableName, entryName, StringComparison.OrdinalIgnoreCase) < 0)
+            int cmp = ComparePermissionEntries(newType, tableName, entryType, entryName);
+            if (cmp < 0)
                 return i;
         }
 
@@ -317,7 +312,8 @@ public static class PermissionSyntaxHelper
     }
 
     /// <summary>
-    /// Sorts the permission entries by (type keyword, object name), both case-insensitive.
+    /// Sorts the permission entries using AZ Dev Tools-compatible ordering:
+    /// table/tabledata first (grouped by name), remaining types alphabetically.
     /// Returns a new list with the entries in sorted order, stripping leading trivia from
     /// all entries (callers are responsible for applying formatting).
     /// </summary>
@@ -331,17 +327,50 @@ public static class PermissionSyntaxHelper
         {
             var typeA = GetPermissionTypeText(a) ?? string.Empty;
             var typeB = GetPermissionTypeText(b) ?? string.Empty;
-            int typeCompare = string.Compare(typeA, typeB, StringComparison.OrdinalIgnoreCase);
-            if (typeCompare != 0)
-                return typeCompare;
-
             var nameA = GetObjectNameFromPermission(a) ?? string.Empty;
             var nameB = GetObjectNameFromPermission(b) ?? string.Empty;
-            return string.Compare(nameA, nameB, StringComparison.OrdinalIgnoreCase);
+            return ComparePermissionEntries(typeA, nameA, typeB, nameB);
         });
 
         return entries;
     }
+
+    /// <summary>
+    /// Compares two permission entries using AZ Dev Tools-compatible ordering:
+    /// - table/tabledata types sort first, grouped by name (table before tabledata for same name)
+    /// - remaining types sort alphabetically by type keyword (OrdinalIgnoreCase)
+    /// - within the same non-table type, sort by name using natural/alphanumeric comparison
+    /// </summary>
+    public static int ComparePermissionEntries(string typeA, string nameA, string typeB, string nameB)
+    {
+        bool aIsTable = IsTableType(typeA);
+        bool bIsTable = IsTableType(typeB);
+
+        if (aIsTable && bIsTable)
+        {
+            // Both table types: sort by name first, then type (table before tabledata)
+            int nameCompare = NaturalNameComparer.Compare(nameA, nameB);
+            if (nameCompare != 0)
+                return nameCompare;
+            return string.Compare(typeA, typeB, StringComparison.OrdinalIgnoreCase);
+        }
+
+        if (aIsTable != bIsTable)
+        {
+            // Table types come first
+            return aIsTable ? -1 : 1;
+        }
+
+        // Both non-table: sort by type alphabetically, then by name
+        int typeCompare = string.Compare(typeA, typeB, StringComparison.OrdinalIgnoreCase);
+        if (typeCompare != 0)
+            return typeCompare;
+        return NaturalNameComparer.Compare(nameA, nameB);
+    }
+
+    private static bool IsTableType(string type) =>
+        string.Equals(type, "table", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(type, "tabledata", StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Builds a multi-line PermissionPropertyValueSyntax from an ordered list of entries.

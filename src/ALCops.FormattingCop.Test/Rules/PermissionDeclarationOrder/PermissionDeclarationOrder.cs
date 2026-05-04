@@ -25,6 +25,8 @@ namespace ALCops.FormattingCop.Test
         [TestCase("UnsortedMixedTypes")]
         [TestCase("UnsortedSingleType")]
         [TestCase("UnsortedCodeunit")]
+        [TestCase("UnsortedNumeric")]
+        [TestCase("UnsortedTableNotFirst")]
         public async Task HasDiagnostic(string testCase)
         {
             var code = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(HasDiagnostic), $"{testCase}.al"))
@@ -38,6 +40,9 @@ namespace ALCops.FormattingCop.Test
         [TestCase("SingleEntry")]
         [TestCase("NoPermissionsProperty")]
         [TestCase("SortedTabledata")]
+        [TestCase("DotsBeforeLetters")]
+        [TestCase("NaturalNumericSort")]
+        [TestCase("TableTypesFirst")]
         public async Task NoDiagnostic(string testCase)
         {
             var code = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(NoDiagnostic), $"{testCase}.al"))

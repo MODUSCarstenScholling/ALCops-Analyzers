@@ -24,8 +24,8 @@ permissionset 50100 "My Permission Set"
     Assignable = false;
     Access = Public;
 
-    [|Permissions = tabledata "My Table" = R,
-                  codeunit "My Codeunit" = X,
+    [|Permissions = codeunit "My Codeunit" = X,
+                  report "My Report" = X,
                   page "My Page" = X,
-                  report "My Report" = X|];
+                  tabledata "My Table" = R|];
 }

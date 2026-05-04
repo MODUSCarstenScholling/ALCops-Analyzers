@@ -22,7 +22,8 @@ Detects `Permissions` property entries that are not sorted alphabetically by (ty
 ```
 src/ALCops.Common/
 └── Permissions/
-    └── PermissionSyntaxHelper.cs    # Shared sort logic, multi-line builder
+    ├── NaturalNameComparer.cs          # Natural/alphanumeric name comparison (AZ-compatible)
+    └── PermissionSyntaxHelper.cs       # Shared sort logic, multi-line builder
 
 src/ALCops.FormattingCop/
 ├── Analyzers/
@@ -33,11 +34,21 @@ src/ALCops.FormattingCop/
 
 ### Sort order
 
-Entries are sorted by two keys:
-1. **Type keyword** (alphabetical, case-insensitive): `codeunit` < `page` < `query` < `record` < `report` < `table` < `tabledata` < `xmlport`
-2. **Object name** (alphabetical, case-insensitive) within the same type
+Entries are sorted using AZ Dev Tools-compatible ordering (matches `PermissionComparer` from al-code-outline):
 
-Uses `StringComparison.OrdinalIgnoreCase` for both comparisons. Note that ordinal comparison means `(` < `+` < `0` < `A`, which may differ from culture-specific ordering.
+1. **Table types first**: `table` and `tabledata` entries are grouped before all other types
+   - Within table types, entries are sorted by **object name** first (natural/alphanumeric comparison)
+   - For the same object name, `table` sorts before `tabledata`
+2. **Remaining types alphabetically**: `codeunit` < `page` < `query` < `report` < `xmlport`
+   - Within the same type, sorted by **object name** (natural/alphanumeric comparison)
+
+**Name comparison** uses `NaturalNameComparer` (natural/alphanumeric sort):
+- Splits names into text and numeric chunks
+- Text chunks: spaces stripped, compared with `StringComparison.InvariantCultureIgnoreCase`
+- Numeric chunks: compared as integers (`"Item 2"` < `"Item 10"`)
+- Tiebreaker: shorter string first
+
+Uses `StringComparison.OrdinalIgnoreCase` for type keyword comparison only (fixed ASCII vocabulary).
 
 ### Analysis flow
 
@@ -59,7 +70,11 @@ Uses `StringComparison.OrdinalIgnoreCase` for both comparisons. Note that ordina
 | `RegisterCompilationAction` | Same pattern as AC0032; iterates all objects in one pass |
 | One diagnostic per object, not per entry | The fix reorders the entire list; per-entry diagnostics would be noise |
 | Diagnostic on `PropertySyntax` node | Ensures CodeFix can find the node via `FindNode` + ancestor/descendant traversal |
-| Type+name sorting applied globally (affects AC0031/AC0032) | `ArePermissionsSorted` was refactored from name-only to type+name; consistent behavior across all permission rules |
+| AZ Dev Tools-compatible sort order | Prevents false positives on code formatted by AZ Dev Tools' "Sort Permissions" |
+| table/tabledata first, rest alphabetical | Matches AZ's fixed priority map; more future-proof for new permission types |
+| Natural/alphanumeric name comparison | Matches AZ's `AlphanumComparatorFast`; handles numeric suffixes correctly |
+| `InvariantCultureIgnoreCase` for names | Handles accented chars and punctuation weight; matches AZ behavior |
+| Space stripping in text chunks | Matches AZ behavior; prevents spaces from affecting sort order |
 | CodeFix always outputs multi-line for 2+ entries | Consistent formatting; single-line permissions are hard to scan |
 | Single entry stays single-line | No formatting benefit from multi-line with one entry |
 | Permission chars casing preserved | Each entry keeps its original `r`/`R`/`rimd`/`RIMD`/`X` casing |
@@ -93,13 +108,18 @@ var propertySyntax = node as PropertySyntax
 
 ## Test coverage
 
-**HasDiagnostic (4 cases):** UnsortedTabledata, UnsortedMixedTypes, UnsortedSingleType, UnsortedCodeunit.
-**NoDiagnostic (4 cases):** AlreadySorted, SingleEntry, NoPermissionsProperty, SortedTabledata.
+**HasDiagnostic (6 cases):** UnsortedTabledata, UnsortedMixedTypes, UnsortedSingleType, UnsortedCodeunit, UnsortedNumeric, UnsortedTableNotFirst.
+**NoDiagnostic (7 cases):** AlreadySorted, SingleEntry, NoPermissionsProperty, SortedTabledata, DotsBeforeLetters, NaturalNumericSort, TableTypesFirst.
 **HasFix (4 cases):** ReorderTabledata, ReorderMixedTypes, SingleLineToMultiLine, PreserveCasing.
 
 ## Refactoring impact
 
-The `PermissionSyntaxHelper.ArePermissionsSorted` method was changed from name-only to type+name comparison. This affects AC0031's `FindInsertionIndex` (used by its CodeFix to decide alphabetical vs append insertion). The behavioral change is:
-- A list sorted by name but not by type is now detected as "unsorted"
-- AC0031's CodeFix will append (instead of inserting alphabetically) for such lists
-- This is the correct behavior since type+name is the canonical sort order
+The `PermissionSyntaxHelper` sort logic was changed from simple `OrdinalIgnoreCase` to AZ Dev Tools-compatible ordering. This affects:
+- **FC0004**: Uses the new sort order for detection and code fix
+- **AC0031's `FindInsertionIndex`**: Uses `ComparePermissionEntries` for insertion point calculation
+- **AC0032**: Uses `ArePermissionsSorted` to determine if a list is sorted
+
+The behavioral changes:
+- table/tabledata types now sort before other types (previously alphabetical: `codeunit` came first)
+- Names use natural/alphanumeric comparison (previously ordinal: "Item 10" came before "Item 2")
+- Spaces in names are ignored during comparison (previously significant)
