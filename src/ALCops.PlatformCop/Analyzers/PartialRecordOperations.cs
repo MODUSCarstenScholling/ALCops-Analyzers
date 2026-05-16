@@ -7,6 +7,7 @@ using Microsoft.Dynamics.Nav.CodeAnalysis.Diagnostics;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Semantics;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Syntax;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Text;
+using Microsoft.Dynamics.Nav.CodeAnalysis.Utilities;
 
 namespace ALCops.PlatformCop.Analyzers;
 
@@ -22,14 +23,17 @@ public sealed class PartialRecordOperations : DiagnosticAnalyzer
 
     /// <summary>
     /// Subset of WriteMethods that trigger JIT loads when partial records are active.
+    /// Per MS Docs: inserts, deletes, renames, field transfers, or copies to temporary records.
+    /// Modify is excluded because it only writes changed fields without needing all fields loaded.
     /// Excludes ModifyAll (set-based, no record load), DeleteAll (same), Init (no SQL).
     /// </summary>
     private static readonly ImmutableHashSet<string> JitLoadWriteMethods = RecordMethodClassification.JitLoadWriteMethods;
 
+
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
         ImmutableArray.Create(
             DiagnosticDescriptors.UsePartialRecordsOnRead,
-            DiagnosticDescriptors.PartialRecordsBeforeWriteOperation);
+            DiagnosticDescriptors.PartialRecordsCauseJitLoad);
 
     // SetLoadFields was introduced in runtime 6.0 (BC17, Fall 2020).
     // Fall2020OrGreater would be ideal but is not available it seems
@@ -84,7 +88,7 @@ public sealed class PartialRecordOperations : DiagnosticAnalyzer
             }
         }
 
-        // PC0031: SetLoadFields used on a variable that also has write operations
+        // PC0031: SetLoadFields used on a variable that also has full-field operations
         foreach (var kvp in trackedVariables)
         {
             var state = kvp.Value;
@@ -92,22 +96,22 @@ public sealed class PartialRecordOperations : DiagnosticAnalyzer
             if (state.LoadFieldsLocations.Count == 0)
                 continue;
 
-            var jitWriteMethods = state.WriteMethodNames
-                .Where(JitLoadWriteMethods.Contains)
+            var jitOperations = state.WriteMethodNames
+                .Where(m => JitLoadWriteMethods.Contains(m))
                 .OrderBy(m => m, StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            if (jitWriteMethods.Count == 0)
+            if (jitOperations.Count == 0)
                 continue;
 
-            var writeMethodsText = string.Join(", ", jitWriteMethods);
+            var operationsText = string.Join(", ", jitOperations);
 
             foreach (var info in state.LoadFieldsLocations)
             {
                 context.ReportDiagnostic(Diagnostic.Create(
-                    DiagnosticDescriptors.PartialRecordsBeforeWriteOperation,
+                    DiagnosticDescriptors.PartialRecordsCauseJitLoad,
                     info.Location,
-                    info.MethodName, writeMethodsText, kvp.Key));
+                    info.MethodName, operationsText, kvp.Key));
             }
         }
     }
@@ -144,7 +148,7 @@ public sealed class PartialRecordOperations : DiagnosticAnalyzer
             if (targetName is null || !trackedVariables.TryGetValue(targetName, out var targetState))
                 return true;
 
-            if (targetState.EverHadWriteOp || targetState.EverPassedToFunction || targetState.EverHadLoadFields)
+            if (targetState.EverHadFullRecordAccess || targetState.EverPassedToFunction || targetState.EverHadLoadFields)
                 return true;
         }
 
@@ -181,20 +185,21 @@ public sealed class PartialRecordOperations : DiagnosticAnalyzer
         public List<string?> SetTableTargets { get; } = new();
 
         public bool EverHadLoadFields { get; set; }
-        public bool EverHadWriteOp { get; set; }
+        public bool EverHadFullRecordAccess { get; set; }
         public bool EverPassedToFunction { get; set; }
     }
 
     /// <summary>
     /// Per-variable flow state tracked during the walk. Forked at branch points, merged at join points.
-    /// UncoveredReads accumulates reads not covered by SetLoadFields. Write/pass operations
-    /// retroactively clear this list (a write after a read means SetLoadFields could break the write).
+    /// UncoveredReads accumulates reads not covered by SetLoadFields. Full-record-access operations
+    /// (writes, whole-record assignments) and pass-to-function operations retroactively clear this list
+    /// (adding SetLoadFields before the read could break the subsequent operation).
     /// At branch merge, uncovered reads from all branches are unioned.
     /// </summary>
     private sealed class FlowFlags
     {
         public bool HasLoadFields { get; set; }
-        public bool HasWriteOp { get; set; }
+        public bool HasFullRecordAccess { get; set; }
         public bool PassedToFunction { get; set; }
         public bool HasPartialRead { get; set; }
         public List<ReadInfo> UncoveredReads { get; private set; } = new();
@@ -204,7 +209,7 @@ public sealed class PartialRecordOperations : DiagnosticAnalyzer
         public FlowFlags Clone() => new()
         {
             HasLoadFields = HasLoadFields,
-            HasWriteOp = HasWriteOp,
+            HasFullRecordAccess = HasFullRecordAccess,
             PassedToFunction = PassedToFunction,
             HasPartialRead = HasPartialRead,
             UncoveredReads = new List<ReadInfo>(UncoveredReads),
@@ -221,7 +226,7 @@ public sealed class PartialRecordOperations : DiagnosticAnalyzer
         public void ResetFlags()
         {
             HasLoadFields = false;
-            HasWriteOp = false;
+            HasFullRecordAccess = false;
             PassedToFunction = false;
             HasPartialRead = false;
             LoadFieldsLocations.Clear();
@@ -328,7 +333,34 @@ public sealed class PartialRecordOperations : DiagnosticAnalyzer
             base.VisitInvocationExpression(operation);
         }
 
+        public override void VisitAssignmentStatement(IAssignmentStatement operation)
+        {
+            // Detect whole-record assignment where a tracked variable is the source (RHS):
+            // TempMyTable := MyTable
+            // This reads all fields from MyTable, so adding SetLoadFields before a
+            // preceding read would cause only partial fields to be copied.
+            var sourceVarName = GetVariableNameFromOperation(operation.Value);
+            if (sourceVarName != null &&
+                _trackedVariables.TryGetValue(sourceVarName, out var state) &&
+                _flowState.TryGetValue(sourceVarName, out var flowFlags))
+            {
+                flowFlags.UncoveredReads.Clear();
+                flowFlags.HasFullRecordAccess = true;
+                state.EverHadFullRecordAccess = true;
+            }
+
+            base.VisitAssignmentStatement(operation);
+        }
+
         #region Control flow overrides
+
+        /// <summary>
+        /// Tracks nesting depth inside conditional branches (if/case/while/for/foreach bodies).
+        /// When depth > 0, JIT-load writes are suppressed for PC0031 because the write
+        /// may not execute on the same path as the partial read (avoiding false positives).
+        /// Repeat-until body does NOT increment depth (it always executes at least once).
+        /// </summary>
+        private int _branchDepth;
 
         public override void VisitIfStatement(IIfStatement operation)
         {
@@ -337,11 +369,16 @@ public sealed class PartialRecordOperations : DiagnosticAnalyzer
             var preForkReads = CapturePreForkReadPositions();
             var preBranchState = SaveFlowState();
 
+            _branchDepth++;
             Visit(operation.IfTrueStatement);
+            _branchDepth--;
             var trueBranchState = SaveFlowState();
 
             RestoreFlowState(preBranchState);
+
+            _branchDepth++;
             Visit(operation.IfFalseStatement);
+            _branchDepth--;
             var falseBranchState = SaveFlowState();
 
             MergeFlowStates([trueBranchState, falseBranchState], preForkReads);
@@ -358,20 +395,26 @@ public sealed class PartialRecordOperations : DiagnosticAnalyzer
             foreach (var caseLine in operation.CaseLines)
             {
                 RestoreFlowState(preCaseState);
+                _branchDepth++;
                 Visit(caseLine);
+                _branchDepth--;
                 branchStates.Add(SaveFlowState());
             }
 
             if (operation.ElseStatement != null)
             {
                 RestoreFlowState(preCaseState);
+                _branchDepth++;
                 Visit(operation.ElseStatement);
+                _branchDepth--;
                 branchStates.Add(SaveFlowState());
             }
             else
             {
-                // No else clause: implicit empty branch with pre-case state
-                branchStates.Add(CloneState(preCaseState));
+                // No else clause: implicit empty branch with pre-case state.
+                // preCaseState is already a clone from SaveFlowState() and is not
+                // restored again after this point, so it's safe to use directly.
+                branchStates.Add(preCaseState);
             }
 
             MergeFlowStates(branchStates, preForkReads);
@@ -381,7 +424,7 @@ public sealed class PartialRecordOperations : DiagnosticAnalyzer
         {
             if (operation.LoopKind == EnumProvider.LoopKind.Repeat)
             {
-                // repeat-until: body always executes at least once
+                // repeat-until: body always executes at least once (no branch depth increment)
                 Visit(operation.Body);
                 Visit(operation.Condition);
             }
@@ -389,13 +432,7 @@ public sealed class PartialRecordOperations : DiagnosticAnalyzer
             {
                 // while-do: body might not execute
                 Visit(operation.Condition);
-
-                var preForkReads = CapturePreForkReadPositions();
-                var preLoopState = SaveFlowState();
-                Visit(operation.Body);
-                var postBodyState = SaveFlowState();
-
-                MergeFlowStates([preLoopState, postBodyState], preForkReads);
+                VisitConditionalLoopBody(operation.Body);
             }
         }
 
@@ -403,22 +440,26 @@ public sealed class PartialRecordOperations : DiagnosticAnalyzer
         {
             Visit(operation.InitialValue);
             Visit(operation.EndValue);
-
-            var preForkReads = CapturePreForkReadPositions();
-            var preLoopState = SaveFlowState();
-            Visit(operation.Body);
-            var postBodyState = SaveFlowState();
-
-            MergeFlowStates([preLoopState, postBodyState], preForkReads);
+            VisitConditionalLoopBody(operation.Body);
         }
 
         public override void VisitForEachLoopStatement(IForEachLoopStatement operation)
         {
             Visit(operation.Expression);
+            VisitConditionalLoopBody(operation.Body);
+        }
 
+        /// <summary>
+        /// Shared logic for loop bodies that may not execute (while-do, for, foreach).
+        /// Forks state, visits body at incremented branch depth, then merges.
+        /// </summary>
+        private void VisitConditionalLoopBody(IOperation loopBody)
+        {
             var preForkReads = CapturePreForkReadPositions();
             var preLoopState = SaveFlowState();
-            Visit(operation.Body);
+            _branchDepth++;
+            Visit(loopBody);
+            _branchDepth--;
             var postBodyState = SaveFlowState();
 
             MergeFlowStates([preLoopState, postBodyState], preForkReads);
@@ -440,14 +481,6 @@ public sealed class PartialRecordOperations : DiagnosticAnalyzer
         {
             foreach (var kvp in saved)
                 _flowState[kvp.Key] = kvp.Value.Clone();
-        }
-
-        private static Dictionary<string, FlowFlags> CloneState(Dictionary<string, FlowFlags> source)
-        {
-            var clone = new Dictionary<string, FlowFlags>(StringComparer.OrdinalIgnoreCase);
-            foreach (var kvp in source)
-                clone[kvp.Key] = kvp.Value.Clone();
-            return clone;
         }
 
         /// <summary>
@@ -474,7 +507,7 @@ public sealed class PartialRecordOperations : DiagnosticAnalyzer
             foreach (var kvp in _flowState)
             {
                 kvp.Value.HasLoadFields = branchStates.All(bs => bs[kvp.Key].HasLoadFields);
-                kvp.Value.HasWriteOp = branchStates.Any(bs => bs[kvp.Key].HasWriteOp);
+                kvp.Value.HasFullRecordAccess = branchStates.Any(bs => bs[kvp.Key].HasFullRecordAccess);
                 kvp.Value.PassedToFunction = branchStates.Any(bs => bs[kvp.Key].PassedToFunction);
                 kvp.Value.HasPartialRead = branchStates.Any(bs => bs[kvp.Key].HasPartialRead);
 
@@ -529,7 +562,7 @@ public sealed class PartialRecordOperations : DiagnosticAnalyzer
 
         #region Method classification
 
-        private static void ClassifyInstanceMethodCall(IInvocationExpression operation,
+        private void ClassifyInstanceMethodCall(IInvocationExpression operation,
             VariableState state, FlowFlags flowFlags)
         {
             var methodName = operation.TargetMethod.Name;
@@ -566,7 +599,7 @@ public sealed class PartialRecordOperations : DiagnosticAnalyzer
 
             // Only flag reads where no suppression condition exists.
             // Write/pass AFTER read is handled by retroactive clearing of UncoveredReads.
-            if (!flowFlags.HasLoadFields && !flowFlags.HasWriteOp && !flowFlags.PassedToFunction)
+            if (!flowFlags.HasLoadFields && !flowFlags.HasFullRecordAccess && !flowFlags.PassedToFunction)
                 flowFlags.UncoveredReads.Add(new ReadInfo(operation.Syntax.GetLocation(), methodName));
         }
 
@@ -590,17 +623,21 @@ public sealed class PartialRecordOperations : DiagnosticAnalyzer
             state.EverHadLoadFields = true;
         }
 
-        private static void HandleWriteMethod(VariableState state, FlowFlags flowFlags, string methodName)
+        private void HandleWriteMethod(VariableState state, FlowFlags flowFlags, string methodName)
         {
             // Retroactively suppress uncovered reads: a write after a read means
             // adding SetLoadFields before the read could break the write operation
             flowFlags.UncoveredReads.Clear();
-            flowFlags.HasWriteOp = true;
-            state.EverHadWriteOp = true;
+            flowFlags.HasFullRecordAccess = true;
+            state.EverHadFullRecordAccess = true;
 
-            // PC0031: only record writes for JIT-load detection when a partial read
-            // has occurred on this flow path.
-            if (flowFlags.HasPartialRead && JitLoadWriteMethods.Contains(methodName))
+            // PC0031: only record writes for JIT-load detection when:
+            // 1. A partial read has occurred on this flow path
+            // 2. The method is a JIT-load trigger (Insert, Delete, Rename, TransferFields, Copy)
+            // 3. The write is at the top level (not inside a conditional branch)
+            //    This avoids false positives where the write only executes on a path
+            //    where the record wasn't actually loaded (e.g., if not Find then Insert).
+            if (flowFlags.HasPartialRead && JitLoadWriteMethods.Contains(methodName) && _branchDepth == 0)
                 flowFlags.AddWriteAfterPartialRead(methodName);
         }
 
@@ -635,20 +672,21 @@ public sealed class PartialRecordOperations : DiagnosticAnalyzer
 
         #endregion
 
-        private static string? GetVariableNameFromArgument(IArgument argument)
-        {
-            var value = argument.Value;
+        private static string? GetVariableNameFromArgument(IArgument argument) =>
+            GetVariableNameFromOperation(argument.Value);
 
+        private static string? GetVariableNameFromOperation(IOperation? value)
+        {
             if (value is IConversionExpression conversion)
             {
                 if (conversion.Syntax is IdentifierNameSyntax convIdent)
-                    return convIdent.Identifier.ValueText;
+                    return convIdent.Identifier.ValueText?.UnquoteIdentifier();
 
                 value = conversion.Operand;
             }
 
             if (value?.Syntax is IdentifierNameSyntax directIdent)
-                return directIdent.Identifier.ValueText;
+                return directIdent.Identifier.ValueText?.UnquoteIdentifier();
 
             return null;
         }
