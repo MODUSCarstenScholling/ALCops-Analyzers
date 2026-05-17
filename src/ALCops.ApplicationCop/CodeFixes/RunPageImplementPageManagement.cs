@@ -14,6 +14,7 @@ namespace ALCops.ApplicationCop.CodeFixes;
 public sealed class RunPageImplementPageManagementCodeFixProvider : CodeFixProvider
 {
     private const string PageManagementCodeunitName = "Page Management";
+    private const string PageManagementNamespace = "Microsoft.Utilities";
     private const string DefaultVariableName = "PageManagement";
     private const string PageRunMethodName = "PageRun";
     private const string PageRunModalMethodName = "PageRunModal";
@@ -133,6 +134,11 @@ public sealed class RunPageImplementPageManagementCodeFixProvider : CodeFixProvi
             if (updatedMethodOrTrigger is not null)
                 newRoot = AddLocalVariable(newRoot, updatedMethodOrTrigger, variableName);
         }
+
+#if NET8_0_OR_GREATER
+        // If the file uses namespaces, ensure "using Microsoft.Utilities;" is present
+        newRoot = AddUsingDirectiveIfNeeded(newRoot, PageManagementNamespace);
+#endif
 
         return document.WithSyntaxRoot(newRoot);
     }
@@ -367,6 +373,70 @@ public sealed class RunPageImplementPageManagementCodeFixProvider : CodeFixProvi
 
         return SyntaxFactory.SimpleTypeReference(codeunitDataType);
     }
+
+    #endregion
+
+    #region Using Directive Helpers
+
+#if NET8_0_OR_GREATER
+    private static SyntaxNode AddUsingDirectiveIfNeeded(SyntaxNode root, string namespaceName)
+    {
+        if (root is not CompilationUnitSyntax compilationUnit)
+            return root;
+
+        if (compilationUnit.NamespaceDeclaration is null)
+            return root;
+
+        var namespaceText = namespaceName;
+        for (int i = 0; i < compilationUnit.Usings.Count; i++)
+        {
+            if (string.Equals(compilationUnit.Usings[i].Name?.ToString(), namespaceText, StringComparison.OrdinalIgnoreCase))
+                return root;
+        }
+
+        var usingDirective = SyntaxFactory.UsingDirective(
+            SyntaxFactory.ParseQualifiedName(namespaceText))
+            .WithSemicolonToken(SyntaxFactory.Token(EnumProvider.SyntaxKind.SemicolonToken));
+
+        return AddUsingInSortedOrder(compilationUnit, usingDirective);
+    }
+
+    private static CompilationUnitSyntax AddUsingInSortedOrder(CompilationUnitSyntax compilationUnit, UsingDirectiveSyntax newUsing)
+    {
+        var usings = compilationUnit.Usings;
+
+        if (usings.Count == 0)
+        {
+            var eol = SyntaxFactory.EndOfLine(Environment.NewLine, elastic: false);
+            var usingWithTrivia = newUsing
+                .WithLeadingTrivia(eol)
+                .WithTrailingTrivia(eol);
+            return compilationUnit.WithUsings(
+                new SyntaxList<UsingDirectiveSyntax>().Add(usingWithTrivia));
+        }
+
+        var newUsingName = newUsing.Name!.ToString();
+        var newList = new SyntaxList<UsingDirectiveSyntax>();
+        bool inserted = false;
+
+        for (int i = 0; i < usings.Count; i++)
+        {
+            if (!inserted && string.CompareOrdinal(usings[i].Name?.ToString(), newUsingName) > 0)
+            {
+                newList = newList.Add(
+                    newUsing.WithTrailingTrivia(SyntaxFactory.EndOfLine(Environment.NewLine)));
+                inserted = true;
+            }
+            newList = newList.Add(usings[i]);
+        }
+
+        if (!inserted)
+            newList = newList.Add(
+                newUsing.WithTrailingTrivia(SyntaxFactory.EndOfLine(Environment.NewLine)));
+
+        return compilationUnit.WithUsings(newList);
+    }
+#endif
 
     #endregion
 }

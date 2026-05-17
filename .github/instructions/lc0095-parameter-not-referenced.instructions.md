@@ -36,6 +36,8 @@ Key helper: `MethodImplementsInterfaceMethod()` from `ALCops.Common.Extensions.M
 | Skip local methods | AA0137 handles them; avoids duplicate diagnostics |
 | Include event subscribers | AA0137 explicitly excludes them despite being local |
 | Skip interface implementations | Parameters are contractually required |
+| Skip handler functions | Platform-enforced signatures (MessageHandler, ConfirmHandler, etc.); uses reflection on MethodSymbol.IsHandler |
+| Skip ErrorInfo/Notification AddAction callbacks | Single ErrorInfo/Notification param in public/internal codeunit method is contractually required by platform AddAction API |
 | Skip triggers | Platform-defined signatures |
 | Skip event declarations | Parameters define subscriber contract |
 | Skip obsolete methods | No value in modifying deprecated code |
@@ -44,6 +46,6 @@ Key helper: `MethodImplementsInterfaceMethod()` from `ALCops.Common.Extensions.M
 
 ## Test coverage
 
-**HasDiagnostic (5 cases):** InternalProcedure, PublicProcedure, EventSubscriber, MultipleParamsOneUnused, VarParameterUnused.
-**NoDiagnostic (7 cases):** LocalProcedure, TriggerUnusedParam, InterfaceImplementation, EventDeclaration, ObsoleteProcedure, AllParametersUsed, ParameterUsedInExpression.
+**HasDiagnostic (7 cases):** InternalProcedure, PublicProcedure, EventSubscriber, MultipleParamsOneUnused, VarParameterUnused, ErrorInfoInPage, ErrorInfoMultipleParams.
+**NoDiagnostic (11 cases):** LocalProcedure, TriggerUnusedParam, InterfaceImplementation, EventDeclaration, ObsoleteProcedure, AllParametersUsed, ParameterUsedInExpression, ErrorInfoCallbackInCodeunit, NotificationCallbackInCodeunit, MessageHandlerInCodeunit, ConfirmHandlerInCodeunit.
 **HasFix (2 cases):** RemoveSingleParameter, RemoveMiddleParameter.

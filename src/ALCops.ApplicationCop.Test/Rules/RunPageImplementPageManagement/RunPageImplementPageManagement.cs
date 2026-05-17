@@ -66,5 +66,29 @@ namespace ALCops.ApplicationCop.Test
 
             fixture.TestCodeFix(currentCode, expectedCode, DiagnosticDescriptors.NotBlankRequiredOnPrimaryKeyField);
         }
+
+        [Test]
+        [TestCase("PageRunZeroIdentifierAndRecordWithNamespace")]
+        [TestCase("PageRunPageIdentifierAndRecordWithNamespaceAndUsing")]
+        public async Task HasFixWithNamespace(string testCase)
+        {
+            RequireMinimumVersion(
+                "16.0",
+                "Namespaces are not supported before AL version 16");
+
+            var currentCode = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(HasFix), testCase, "current.al"))
+                .ConfigureAwait(false);
+
+            var expectedCode = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(HasFix), testCase, "expected.al"))
+                .ConfigureAwait(false);
+
+            var fixture = RoslynFixtureFactory.Create<RunPageImplementPageManagementCodeFixProvider>(
+                new CodeFixTestFixtureConfig
+                {
+                    AdditionalAnalyzers = [_analyzer]
+                });
+
+            fixture.TestCodeFix(currentCode, expectedCode, DiagnosticDescriptors.NotBlankRequiredOnPrimaryKeyField);
+        }
     }
 }
