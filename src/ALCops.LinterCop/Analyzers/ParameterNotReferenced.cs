@@ -96,7 +96,7 @@ public sealed class ParameterNotReferenced : DiagnosticAnalyzer
             return false;
 
         // Triggers have platform-defined signatures
-        if (method.MethodKind == MethodKind.Trigger)
+        if (method.MethodKind == EnumProvider.MethodKind.Trigger)
             return false;
 
         // Event declarations define the subscriber contract
