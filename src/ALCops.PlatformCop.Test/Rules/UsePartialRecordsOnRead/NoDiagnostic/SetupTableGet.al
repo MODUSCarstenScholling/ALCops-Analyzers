@@ -2,21 +2,19 @@ codeunit 50100 MyCodeunit
 {
     procedure MyProcedure(): Text
     var
-        MyTable: Record MyTable;
+        MySetup: Record MySetup;
     begin
-        MyTable.SetLoadFields(Description, MyField);
-        MyTable.FindFirst();
-        exit(MyTable.MyField + MyTable.Description);
+        [|MySetup.Get()|];
+        exit(MySetup.MyField);
     end;
 }
 
-table 50100 MyTable
+table 50100 MySetup
 {
     fields
     {
         field(1; "Primary Key"; Code[20]) { }
         field(2; MyField; Text[100]) { }
-        field(3; Description; Text[250]) { }
     }
 
     keys
