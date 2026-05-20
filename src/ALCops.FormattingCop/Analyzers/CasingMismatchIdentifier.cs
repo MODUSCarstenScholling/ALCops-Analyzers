@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Immutable;
 using System.Reflection;
 using ALCops.Common.Reflection;
+using ALCops.Common.Extensions;
 using Microsoft.Dynamics.Nav.CodeAnalysis;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Diagnostics;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Syntax;
@@ -265,7 +266,7 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
             parentKind == EnumProvider.SyntaxKind.UnaryNotExpression)
             return false;
 
-        if (string.Equals(idName.Identifier.ValueText, "Rec", StringComparison.OrdinalIgnoreCase))
+        if (idName.Identifier.ValueText.IsSameName("Rec"))
             return false;
 
         if (idName.Parent?.Parent is PermissionSyntax permissionSyntax &&
@@ -325,9 +326,9 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
                 break;
 
             case CommaSeparatedPropertyValueSyntax when
-                 string.Equals(prop.Name.Identifier.ValueText, "ApplicationArea", StringComparison.OrdinalIgnoreCase):
+                 prop.Name.Identifier.ValueText.IsSameName("ApplicationArea"):
             case CommaSeparatedIdentifierOrLiteralPropertyValueSyntax when
-                 string.Equals(prop.Name.Identifier.ValueText, "ValuesAllowed", StringComparison.OrdinalIgnoreCase):
+                 prop.Name.Identifier.ValueText.IsSameName("ValuesAllowed"):
             case ImagePropertyValueSyntax:
             case StringPropertyValueSyntax:
             case OptionValuePropertyValueSyntax:
@@ -414,7 +415,7 @@ public sealed class CasingMismatchIdentifier : DiagnosticAnalyzer
 
             if (symbolKindDict.ContainsKey(nameText))
             {
-                var memberDict = string.Equals(expressionText, "ObjectType", StringComparison.OrdinalIgnoreCase)
+                var memberDict = SemanticFacts.IsSameName(expressionText, "ObjectType")
                     ? _objectTypeMemberDictionary
                     : _symbolKindDictionary;
                 CompareAgainstDictionary(ctx, name.Identifier, memberDict);

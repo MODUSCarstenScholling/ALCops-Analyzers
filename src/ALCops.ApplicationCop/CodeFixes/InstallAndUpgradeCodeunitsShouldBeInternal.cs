@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using ALCops.Common.Extensions;
 using Microsoft.Dynamics.Nav.CodeAnalysis;
 using Microsoft.Dynamics.Nav.CodeAnalysis.CodeActions;
 using Microsoft.Dynamics.Nav.CodeAnalysis.CodeFixes;
@@ -82,10 +83,7 @@ public sealed class InstallAndUpgradeCodeunitsShouldBeInternalCodeFixProvider : 
 
         var existingAccessProperty = properties
                                         .OfType<PropertySyntax>()
-                                        .FirstOrDefault(p => string.Equals(
-                                                                p.Name?.Identifier.ValueText,
-                                                                AccessPropertyName,
-                                                                StringComparison.OrdinalIgnoreCase));
+                                        .FirstOrDefault(p => p.Name?.Identifier.ValueText.IsSameName(AccessPropertyName) == true);
 
         PropertyListSyntax newPropertyList;
         if (existingAccessProperty is not null)

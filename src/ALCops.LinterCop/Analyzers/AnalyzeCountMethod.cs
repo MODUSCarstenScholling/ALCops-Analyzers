@@ -123,12 +123,12 @@ public class AnalyzeCountMethod : DiagnosticAnalyzer
 
     private static bool IsEligibleUseQueryOrFindWithNext(IRecordTypeSymbol record)
     {
-        if (possibleLargeTableIdentifierKeywords.Any(keyword => record.Name.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0))
+        if (possibleLargeTableIdentifierKeywords.Any(keyword => record.Name.IndexOf(keyword, SemanticFacts.NameEqualityComparison) >= 0))
             return true;
 
         // Tables with a field "Entry No." could possible have a large amount of records
         if (record.OriginalDefinition is ITableTypeSymbol table)
-            return table.PrimaryKey.Fields.Any(field => string.Equals(field.Name, "Entry No.", StringComparison.OrdinalIgnoreCase));
+            return table.PrimaryKey.Fields.Any(field => SemanticFacts.IsSameName(field.Name, "Entry No."));
 
         return false;
     }

@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using ALCops.Common.Reflection;
+using ALCops.Common.Extensions;
 using Microsoft.Dynamics.Nav.CodeAnalysis;
 using Microsoft.Dynamics.Nav.CodeAnalysis.CodeActions;
 using Microsoft.Dynamics.Nav.CodeAnalysis.CodeActions.Mef;
@@ -93,5 +94,5 @@ public sealed class ApplicationAreaOnApiPageCodeFix : CodeFixProvider
     }
 
     private static bool IsApplicationAreaProperty(PropertySyntax propertySyntax) =>
-        string.Equals(propertySyntax.Name?.Identifier.ValueText, ApplicationAreaPropertyName, StringComparison.OrdinalIgnoreCase);
+        propertySyntax.Name?.Identifier.ValueText.IsSameName(ApplicationAreaPropertyName) == true;
 }
