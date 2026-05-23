@@ -76,7 +76,7 @@ public class TableDataAccessUnusedPermissions : DiagnosticAnalyzer
         IApplicationObjectTypeSymbol containingObject,
         List<RequiredPermission> requiredPermissions)
     {
-        // Build object-scope record map (global vars, report data items, xmlport table elements)
+        // Build object-scope record map (global vars, data items, xmlport table elements)
         Dictionary<string, IRecordTypeSymbol>? objectScopeRecordMap = null;
         foreach (var member in containingObject.GetMembers())
         {
@@ -86,45 +86,10 @@ public class TableDataAccessUnusedPermissions : DiagnosticAnalyzer
             {
                 objectScopeRecordMap ??= new(StringComparer.OrdinalIgnoreCase);
                 objectScopeRecordMap.TryAdd(globalVar.Name, globalRecordType);
-                continue;
-            }
-
-            // Report data items act as implicit record variables in trigger code
-            if (member.Kind == EnumProvider.SymbolKind.ReportDataItem
-                && member.GetBooleanPropertyValue(EnumProvider.PropertyKind.UseTemporary) is not true
-                && member.GetTypeSymbol() is IRecordTypeSymbol dataItemRecordType
-                && !dataItemRecordType.Temporary)
-            {
-                objectScopeRecordMap ??= new(StringComparer.OrdinalIgnoreCase);
-                objectScopeRecordMap.TryAdd(member.Name, dataItemRecordType);
-                continue;
-            }
-
-            // Query data items act as implicit record variables in trigger code
-            if (member.Kind == EnumProvider.SymbolKind.QueryDataItem
-                && member.GetTypeSymbol() is IRecordTypeSymbol queryDataItemRecordType
-                && !queryDataItemRecordType.Temporary)
-            {
-                objectScopeRecordMap ??= new(StringComparer.OrdinalIgnoreCase);
-                objectScopeRecordMap.TryAdd(member.Name, queryDataItemRecordType);
-                continue;
-            }
-
-            // XmlPort table elements act as implicit record variables in trigger code
-            if (member.Kind == EnumProvider.SymbolKind.XmlPortNode
-                && member is IXmlPortNodeSymbol xmlPortNode)
-            {
-                AddXmlPortNodeToVarMap(xmlPortNode, ref objectScopeRecordMap);
-
-                // Nested nodes (tableelement inside textelement) are not direct members
-                foreach (var nestedNode in xmlPortNode.FlattenedNodes)
-                    AddXmlPortNodeToVarMap(nestedNode, ref objectScopeRecordMap);
-
-                continue;
             }
         }
 
-        // Add all nested data items (report and query) to the object-scope record map
+        // Add all nested data items (report and query, unlimited depth) to the object-scope record map
         foreach (var dataItem in containingObject.GetFlattenedDataItems())
         {
             if (dataItem.GetBooleanPropertyValue(EnumProvider.PropertyKind.UseTemporary) is not true
@@ -134,6 +99,12 @@ public class TableDataAccessUnusedPermissions : DiagnosticAnalyzer
                 objectScopeRecordMap ??= new(StringComparer.OrdinalIgnoreCase);
                 objectScopeRecordMap.TryAdd(dataItem.Name, nestedRecordType);
             }
+        }
+
+        // Add all nested xmlport table elements (unlimited depth) to the object-scope record map
+        foreach (var xmlNode in containingObject.GetFlattenedXmlPortNodes())
+        {
+            AddXmlPortNodeToVarMap(xmlNode, ref objectScopeRecordMap);
         }
 
         foreach (var node in ctx.Node.DescendantNodes())
@@ -334,24 +305,11 @@ public class TableDataAccessUnusedPermissions : DiagnosticAnalyzer
             }
         }
 
-        // XmlPort nodes
-        foreach (var member in containingObject.GetMembers())
+        // XmlPort nodes: use GetFlattenedXmlPortNodes to include all nested levels
+        foreach (var xmlNode in containingObject.GetFlattenedXmlPortNodes())
         {
-            if (member.Kind == EnumProvider.SymbolKind.XmlPortNode)
-            {
-                foreach (var r in RequiredPermissionDetector.GetFromXmlPortNode(member, includeSystemTables: true))
-                    requiredPermissions.Add(r);
-
-                // Nested nodes (tableelement inside textelement) are not direct members
-                if (member is IXmlPortNodeSymbol topNode)
-                {
-                    foreach (var nestedNode in topNode.FlattenedNodes)
-                    {
-                        foreach (var r in RequiredPermissionDetector.GetFromXmlPortNode(nestedNode, includeSystemTables: true))
-                            requiredPermissions.Add(r);
-                    }
-                }
-            }
+            foreach (var r in RequiredPermissionDetector.GetFromXmlPortNode(xmlNode, includeSystemTables: true))
+                requiredPermissions.Add(r);
         }
     }
 
