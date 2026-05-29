@@ -6,6 +6,29 @@ applyTo: 'src/ALCops.*/Analyzers/**'
 
 ALCops Analyzers is a collection of 6 AL code analyzers for Business Central, built on the `Microsoft.Dynamics.Nav.CodeAnalysis` SDK. Each analyzer ("cop") lives in its own project and targets a specific concern.
 
+## NAV SDK Source Reference (MANDATORY)
+
+If the directory `../nav-sdk-source` exists (relative to this repo root), you **MUST** use it as your primary reference when:
+- Investigating SDK types, methods, or behaviors
+- Understanding how syntax nodes, symbols, or operations work
+- Looking for implementation patterns or examples
+- Debugging build failures on specific TFMs
+- Discovering available API surface
+
+**This is not optional.** The nav-sdk-source repo contains the decompiled source code of the entire NAV/BC SDK and is the authoritative source of truth for understanding the APIs we build against.
+
+### What it contains
+
+| Content | Why it matters |
+|---------|---------------|
+| **NAV CodeAnalysis SDK** | The syntax tree, symbol, semantic model, and diagnostics APIs our analyzers are built on. Every type we use is defined here. |
+| **Microsoft CodeCops** (CodeCop, AppSourceCop, UICop, PerTenantExtensionCop) | Production-quality reference implementations of DiagnosticAnalyzers and CodeFixProviders. Shows proven patterns for callbacks, symbol resolution, and fix registration. |
+| **Compiler and tooling** (alc, Deployment, EditorServices) | Reveals internal behaviors: how compilation works, how the editor invokes analyzers, callback ordering. |
+
+### How to use it
+
+Read **all** instruction files in `../nav-sdk-source/.github/instructions/` for navigation details, patterns, and conventions. List the directory first to discover available guides, then read what's relevant to your current task.
+
 ## Project Structure
 
 See `project-overview.instructions.md` for full solution layout. Each cop project follows this internal layout:
