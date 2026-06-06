@@ -15,6 +15,46 @@
                 "${workspaceFolder}/.vscode/Setup-BCDevTools.ps1"
             ],
             "problemMatcher": []
+        },
+        {
+            "label": "Copy Bin to AL Analyzers",
+            "type": "shell",
+            "command": "pwsh",
+            "args": [
+                "-NoProfile",
+                "-ExecutionPolicy",
+                "Bypass",
+                "-File",
+                "${workspaceFolder}/.vscode/Copy-BinToALAnalyzers.ps1",
+                "-Configuration",
+                "${input:copyBinConfiguration}",
+                "-TargetFramework",
+                "${input:copyBinTargetFramework}"
+            ],
+            "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id": "copyBinConfiguration",
+            "type": "pickString",
+            "description": "Build configuration",
+            "options": [
+                "Debug",
+                "Release"
+            ],
+            "default": "Debug"
+        },
+        {
+            "id": "copyBinTargetFramework",
+            "type": "pickString",
+            "description": "Target framework",
+            "options": [
+                "net10.0",
+                "net8.0",
+                "netstandard2.1"
+            ],
+            "default": "net10.0"
         }
     ]
 }
