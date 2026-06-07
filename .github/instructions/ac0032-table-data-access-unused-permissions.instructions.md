@@ -52,8 +52,8 @@ src/ALCops.Common/
    - Skip obsolete methods via `GetDeclaredSymbol` + `IsObsolete()`
    - For each method body: syntax pre-filter (`HasPossibleDbInvocation`)
    - Build per-method record variable map from `IMethodSymbol.LocalVariables` + `.Parameters`
-   - Walk method body for `InvocationExpressionSyntax`, resolve via variable map lookup (fast path)
-   - Fall back to `GetSymbolInfo` only for complex receivers (function calls, array indexing)
+   - Walk method body for both `InvocationExpressionSyntax` and standalone `MemberAccessExpressionSyntax` (method calls without parentheses)
+   - Unified `TryGetPermissionFromDbAccess` extracts method name + receiver from either form, resolves via variable map (fast path), falls back to `GetSymbolInfo` for complex receivers
 5. **Collect data items** (`CollectFromDataItems`):
    - Iterate `containingObject.GetMembers()` for ReportDataItem, QueryDataItem, XmlPortNode symbols
    - For XmlPortNode: also iterate `FlattenedNodes` to reach nested table elements
@@ -65,14 +65,12 @@ src/ALCops.Common/
 | Method | Purpose |
 |---|---|
 | `AnalyzeApplicationObject` | Entry point; checks Permissions, orchestrates collection and reporting |
-| `CollectFromInvocations` | Builds object-scope record map (vars + data items), walks method bodies, resolves DB calls via syntax + symbol lookup |
-| `TryGetPermissionFromInvocation` | Resolves a single invocation: fast path via variable map, fallback via GetSymbolInfo |
-| `TryGetPermissionViaSymbolInfo` | Fallback for complex receivers: uses GetSymbolInfo to resolve method and receiver type |
+| `CollectFromInvocations` | Builds object-scope record map (vars + data items), walks method bodies, resolves DB calls via unified handler |
+| `TryGetPermissionFromDbAccess` | Unified resolution for both syntax forms (with/without parentheses): pattern-matches to extract method name + receiver, uses variable-map fast path, falls back to `TryGetPermissionViaSymbolInfo` |
+| `TryGetPermissionViaSymbolInfo` | Fallback for complex receivers: uses GetSymbolInfo on the node and receiver expression to resolve method and receiver type |
 | `CollectFromDataItems` | Iterates report/query FlattenedDataItems and xmlport FlattenedXmlPortNodes (all via reflection) for implicit read permissions |
-| `CollectFromQueryDataItems` | Uses reflection to access internal `FlattenedDataItems` on QueryTypeSymbol |
-| `AddNestedQueryDataItemsToVarMap` | Adds nested query data items to the object-scope record map via reflection |
 | `AddXmlPortNodeToVarMap` | Adds an xmlport table element to the object-scope record map if it references a non-temporary table |
-| `HasPossibleDbInvocation` | Syntax pre-filter: checks if body has any invocation name matching a DB operation |
+| `HasPossibleDbInvocation` | Syntax pre-filter: checks if body has any invocation name matching a DB operation (handles both syntax forms) |
 | `AnalyzePermissionEntry` | Compares one declared entry against collected required permissions |
 | `PermissionMatchesTable` | Matches identifier/qualified/objectId syntax against `ITableTypeSymbol` |
 
@@ -142,7 +140,7 @@ When removing the first entry from a multi-entry list, `SeparatedSyntaxList.Remo
 ## Test coverage
 
 **HasDiagnostic (10 cases):** EntireEntryUnused, PartialCharsUnused, MultipleUnusedEntries, NoCodeInCodeunit, UnusedOnReport, UnusedOnQuery, UnusedOnXmlPort, TemporaryRecord, ParameterPartialUnused, ReportDataItemPartialUnused.
-**NoDiagnostic (21 cases):** AllPermissionsUsed, PageSourceTable, TestCodeunitDisabled, ReadUsed, ReportDataItemRead, QueryDataItemRead, PermissionSet, PermissionSetExtension, SystemTable, ParameterOperations, UppercasePermissions, ParameterAllOperations, LocalVarSpacedTable, GlobalVarSpacedTable, ReportDataItemModify, ReportDataItemAliasModify, XmlPortTableElementModify, XmlPortNestedTableElementModify, ReturnParameterRead, ReportNestedDataItemRead, QueryNestedDataItemRead.
+**NoDiagnostic (25 cases):** AllPermissionsUsed, PageSourceTable, TestCodeunitDisabled, ReadUsed, ReportDataItemRead, QueryDataItemRead, PermissionSet, PermissionSetExtension, SystemTable, ParameterOperations, UppercasePermissions, ParameterAllOperations, LocalVarSpacedTable, GlobalVarSpacedTable, ReportDataItemModify, ReportDataItemAliasModify, XmlPortTableElementModify, XmlPortNestedTableElementModify, ReturnParameterRead, ReportNestedDataItemRead, QueryNestedDataItemRead, MethodWithoutParenthesesCount, MethodWithoutParenthesesFindFirst, MethodWithoutParenthesesIsEmpty, MethodWithoutParenthesesChained.
 **HasFix (4 cases):** RemoveEntireEntry, ReduceChars, RemoveEntireProperty, ReplaceChars.
 
 ## Known limitations
@@ -151,3 +149,9 @@ When removing the first entry from a multi-entry list, `SeparatedSyntaxList.Remo
 2. **CalcFields/CalcSums**: Indirect table access through FlowFields is not traced
 3. **InherentPermissions overlap**: Table-level `InherentPermissions` may make an object-level entry redundant, but the analyzer does not flag this (different concern from unused)
 4. **Cross-object calls**: If codeunit A calls codeunit B, and B accesses a table, A's permission for that table appears unused (correct, because permissions don't flow through the call stack)
+
+## Design decisions (continued)
+
+| Decision | Rationale |
+|---|---|
+| Handle `MemberAccessExpressionSyntax` without parent `InvocationExpressionSyntax` | AL allows method calls without parentheses (e.g., `MyTable.Count`); the parser produces `MemberAccessExpressionSyntax` instead of `InvocationExpressionSyntax`. Unified in `TryGetPermissionFromDbAccess` which pattern-matches both forms at entry, then uses a single resolution path. The `HasPossibleDbInvocation` pre-filter also checks both forms. |
