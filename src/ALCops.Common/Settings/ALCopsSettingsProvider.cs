@@ -28,53 +28,54 @@ public static class ALCopsSettingsProvider
     private const string SettingsFileName = "alcops.json";
 
     /// <summary>
-    /// Gets the settings for the specified workspace path.
-    /// Returns cached settings if already loaded, otherwise loads from file or returns defaults.
-    /// </summary>
-    /// <param name="workspacePath">
-    /// The workspace directory path, typically from context.SemanticModel.Compilation.FileSystem?.GetDirectoryPath()
-    /// </param>
-    /// <returns>The settings instance (never null)</returns>
-    public static ALCopsSettings GetSettings(string? workspacePath)
-    {
-        if (string.IsNullOrEmpty(workspacePath))
-            return new ALCopsSettings();
-
-        return _cache.GetOrAdd(workspacePath, LoadSettings);
-    }
-
-    /// <summary>
     /// Gets the settings from the compilation's file system.
-    /// Not cached, since each compilation may have different files.
-    /// Falls back to default settings when no alcops.json is found or fileSystem is null.
+    /// First checks the app folder via the virtual file system, then walks up parent directories
+    /// on the physical file system, and finally falls back to the assembly location.
+    /// Results are cached per directory path.
     /// </summary>
     public static ALCopsSettings GetSettings(IFileSystem? fileSystem)
     {
         if (fileSystem is null)
             return new ALCopsSettings();
 
+        string directoryPath = fileSystem.GetDirectoryPath();
+
+        if (string.IsNullOrEmpty(directoryPath))
+            return LoadSettingsFromFileSystem(fileSystem, directoryPath);
+
+        return _cache.GetOrAdd(directoryPath, _ => LoadSettingsFromFileSystem(fileSystem, directoryPath));
+    }
+
+    private static ALCopsSettings LoadSettingsFromFileSystem(IFileSystem fileSystem, string directoryPath)
+    {
+        var json = TryReadFromVirtualFileSystem(fileSystem);
+        if (json != null)
+            return DeserializeSettings(json);
+
+        if (!string.IsNullOrEmpty(directoryPath))
+        {
+            var settingsFilePath = FindSettingsFileInParentOrAssemblyDirectory(directoryPath);
+            if (settingsFilePath != null)
+                return DeserializeSettings(File.ReadAllText(settingsFilePath));
+        }
+
+        return new ALCopsSettings();
+    }
+
+    private static string? TryReadFromVirtualFileSystem(IFileSystem fileSystem)
+    {
         try
         {
             using Stream stream = fileSystem.OpenRead(SettingsFileName);
             using StreamReader reader = new(stream);
-            string json = reader.ReadToEnd();
-            return DeserializeSettings(json);
+            return reader.ReadToEnd();
         }
-        catch
+        catch (Exception)
         {
-            return new ALCopsSettings();
+            // IFileSystem.OpenRead has no defined exception contract —
+            // implementations throw IOException, KeyNotFoundException, or other types
+            return null;
         }
-    }
-
-    private static ALCopsSettings LoadSettings(string workspacePath)
-    {
-        var settingsFilePath = FindSettingsFile(workspacePath);
-
-        if (settingsFilePath == null)
-            return new ALCopsSettings();
-
-        var json = File.ReadAllText(settingsFilePath);
-        return DeserializeSettings(json);
     }
 
     private static ALCopsSettings DeserializeSettings(string json)
@@ -86,20 +87,40 @@ public static class ALCopsSettingsProvider
 #endif
     }
 
-    private static string? FindSettingsFile(string workspacePath)
+    private static string? FindSettingsFileInParentOrAssemblyDirectory(string directoryPath)
     {
-        // First, try to find in workspace path
-        var settingsFile = FindSettingsFileInDirectory(workspacePath);
+        var settingsFile = FindSettingsFileInParentDirectories(directoryPath);
         if (settingsFile != null)
             return settingsFile;
 
-        // Second, look in the directory where assembly (ALCops.Common.dll) is located
         var assemblyLocation = Path.GetDirectoryName(typeof(ALCopsSettings).Assembly.Location);
-        if (!string.IsNullOrEmpty(assemblyLocation) && !string.Equals(assemblyLocation, workspacePath, StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrEmpty(assemblyLocation) && !string.Equals(assemblyLocation, directoryPath, StringComparison.OrdinalIgnoreCase))
+            return FindSettingsFileInDirectory(assemblyLocation);
+
+        return null;
+    }
+
+    private static string? FindSettingsFileInParentDirectories(string startingPath)
+    {
+        try
         {
-            settingsFile = FindSettingsFileInDirectory(assemblyLocation);
-            if (settingsFile != null)
-                return settingsFile;
+            var parent = Directory.GetParent(startingPath);
+            while (parent != null)
+            {
+                var settingsFile = FindSettingsFileInDirectory(parent.FullName);
+                if (settingsFile != null)
+                    return settingsFile;
+
+                parent = parent.Parent;
+            }
+        }
+        catch (UnauthorizedAccessException)
+        {
+            // Stop traversal at inaccessible directory
+        }
+        catch (IOException)
+        {
+            // Stop traversal on I/O errors
         }
 
         return null;
@@ -117,9 +138,8 @@ public static class ALCopsSettingsProvider
         if (!Directory.Exists(directoryPath))
             return null;
 
-        return Directory.EnumerateFiles(directoryPath)
+        return Directory.EnumerateFiles(directoryPath, "*.json")
             .FirstOrDefault(f => string.Equals(
                 Path.GetFileName(f), SettingsFileName, StringComparison.OrdinalIgnoreCase));
     }
-
 }
