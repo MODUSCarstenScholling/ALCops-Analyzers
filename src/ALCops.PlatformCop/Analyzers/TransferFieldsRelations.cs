@@ -902,7 +902,7 @@ internal static class TransferFieldsRelations
             new TableRelation(
                 new ObjectName("Microsoft.Finance.TDS.TDSBase", "TDS Concessional Code"),
                 new ObjectName("Microsoft.Finance.TDS.TDSBase", "TDS Concessional Code Archive"),
-                new Version(28, 0),
+                new Version(27, 5),
                 null),
             new TableRelation(
                 new ObjectName("Microsoft.Finance.VAT.Ledger", "No Taxable Entry"),
