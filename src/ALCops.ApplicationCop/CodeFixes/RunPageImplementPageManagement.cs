@@ -6,6 +6,7 @@ using Microsoft.Dynamics.Nav.CodeAnalysis.Syntax;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Workspaces;
 using Microsoft.Dynamics.Nav.CodeAnalysis.CodeActions.Mef;
 using ALCops.Common.Reflection;
+using ALCops.Common.Extensions;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Utilities;
 
 namespace ALCops.ApplicationCop.CodeFixes;
@@ -90,7 +91,7 @@ public sealed class RunPageImplementPageManagementCodeFixProvider : CodeFixProvi
         if (originalInvocation.Expression is not MemberAccessExpressionSyntax memberAccess)
             return document;
 
-        var runModel = string.Equals(originalInvocation.Expression.GetNameStringValue(), "RunModal", StringComparison.OrdinalIgnoreCase);
+        var runModel = originalInvocation.Expression.GetNameStringValue().IsSameName("RunModal");
         var methodName = GetMethodNameForPageManagement(originalInvocation, runModel);
 
         // Track nodes across edits so we always operate on nodes from the current tree
@@ -245,7 +246,7 @@ public sealed class RunPageImplementPageManagementCodeFixProvider : CodeFixProvi
             return false;
 
         // Check if matches "Page Management"
-        return string.Equals(GetSubtypeName(typeReference.DataType), PageManagementCodeunitName, StringComparison.OrdinalIgnoreCase);
+        return GetSubtypeName(typeReference.DataType).IsSameName(PageManagementCodeunitName);
     }
 
     private static string? GetSubtypeName(DataTypeSyntax dataType)
@@ -390,7 +391,7 @@ public sealed class RunPageImplementPageManagementCodeFixProvider : CodeFixProvi
         var namespaceText = namespaceName;
         for (int i = 0; i < compilationUnit.Usings.Count; i++)
         {
-            if (string.Equals(compilationUnit.Usings[i].Name?.ToString(), namespaceText, StringComparison.OrdinalIgnoreCase))
+            if (compilationUnit.Usings[i].Name?.ToString().IsSameName(namespaceText) == true)
                 return root;
         }
 

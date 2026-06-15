@@ -42,7 +42,7 @@ public sealed class ExplicitlySetRunTrigger : DiagnosticAnalyzer
 
         foreach (var arg in invocation.Arguments)
         {
-            if (string.Equals(arg.Parameter.Name, RunTriggerParameterName, StringComparison.OrdinalIgnoreCase))
+            if (SemanticFacts.IsSameName(arg.Parameter.Name, RunTriggerParameterName))
                 return;
         }
 
@@ -54,11 +54,13 @@ public sealed class ExplicitlySetRunTrigger : DiagnosticAnalyzer
 
     private static Location GetInvocationNameLocation(IInvocationExpression invocation)
     {
-        if (invocation.Syntax is InvocationExpressionSyntax invocationSyntax &&
-            invocationSyntax.Expression is MemberAccessExpressionSyntax memberAccess)
-        {
+        var syntax = invocation.Syntax;
+
+        if (syntax is InvocationExpressionSyntax invocationSyntax)
+            syntax = invocationSyntax.Expression;
+
+        if (syntax is MemberAccessExpressionSyntax memberAccess)
             return memberAccess.Name.GetLocation();
-        }
 
         return invocation.Syntax.GetLocation();
     }

@@ -34,8 +34,15 @@ namespace ALCops.ApplicationCop.Test
         [Test]
         [TestCase("ObsoletePending")]
         [TestCase("Page")]
+        [TestCase("PageExtension")]
         public async Task NoDiagnostic(string testCase)
         {
+            SkipTestIfVersionIsTooLow(
+                ["PageExtension"],
+                testCase,
+                "13.0",
+                "No support for tableextensions when target itself is already declared in the same module");
+
             var code = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(NoDiagnostic), $"{testCase}.al"))
                 .ConfigureAwait(false);
 

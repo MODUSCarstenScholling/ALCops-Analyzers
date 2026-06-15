@@ -900,6 +900,11 @@ internal static class TransferFieldsRelations
                 new Version(16, 0),
                 null),
             new TableRelation(
+                new ObjectName("Microsoft.Finance.TDS.TDSBase", "TDS Concessional Code"),
+                new ObjectName("Microsoft.Finance.TDS.TDSBase", "TDS Concessional Code Archive"),
+                new Version(27, 5),
+                null),
+            new TableRelation(
                 new ObjectName("Microsoft.Finance.VAT.Ledger", "No Taxable Entry"),
                 new ObjectName("Microsoft.Finance.VAT.Ledger", "VAT Entry"),
                 new Version(16, 0),
@@ -2401,8 +2406,18 @@ internal static class TransferFieldsRelations
                 null),
             new TableRelation(
                 new ObjectName("System.Automation", "Approval Entry"),
+                new ObjectName("System.Automation", "Approval Entry Buffer"),
+                new Version(28, 2),
+                null),
+            new TableRelation(
+                new ObjectName("System.Automation", "Approval Entry"),
                 new ObjectName("System.Automation", "Posted Approval Entry"),
                 new Version(16, 0),
+                null),
+            new TableRelation(
+                new ObjectName("System.Automation", "Posted Approval Entry"),
+                new ObjectName("System.Automation", "Approval Entry Buffer"),
+                new Version(28, 2),
                 null),
             new TableRelation(
                 new ObjectName("System.Automation", "Workflow - Record Change"),

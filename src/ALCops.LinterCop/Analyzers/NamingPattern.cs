@@ -23,8 +23,7 @@ public sealed class NamingPattern : DiagnosticAnalyzer
 
     private void CompilationStart(CompilationStartAnalysisContext ctx)
     {
-        var workspacePath = ctx.Compilation.FileSystem?.GetDirectoryPath();
-        var settings = ALCopsSettingsProvider.GetSettings(workspacePath);
+        var settings = ALCopsSettingsProvider.GetSettings(ctx.Compilation.FileSystem);
 
         List<string>? affixes = null;
         try
@@ -374,13 +373,13 @@ public sealed class NamingPattern : DiagnosticAnalyzer
 
         foreach (var affix in affixes)
         {
-            if (name.StartsWith(affix, StringComparison.OrdinalIgnoreCase) &&
+            if (name.StartsWith(affix, SemanticFacts.NameEqualityComparison) &&
                 name.Length > affix.Length)
             {
                 return name.Substring(affix.Length).TrimStart();
             }
 
-            if (name.EndsWith(affix, StringComparison.OrdinalIgnoreCase) &&
+            if (name.EndsWith(affix, SemanticFacts.NameEqualityComparison) &&
                 name.Length > affix.Length)
             {
                 return name.Substring(0, name.Length - affix.Length).TrimEnd();
@@ -444,7 +443,6 @@ public sealed class NamingPattern : DiagnosticAnalyzer
             [NamingTarget.Object] = (@"^[A-Z]", null, "should start with an uppercase letter", null),
             [NamingTarget.Field] = (@"^[A-Za-z]", @"[%&!?]", "should start with a letter", "should not contain special characters (%, &, !, ?)"),
             [NamingTarget.Action] = (@"^[A-Z]", null, "should start with an uppercase letter", null),
-            [NamingTarget.EnumValue] = (@"^[A-Z]", null, "should start with an uppercase letter", null),
             [NamingTarget.Control] = (@"^[A-Z]", null, "should start with an uppercase letter", null),
         };
 
@@ -524,7 +522,7 @@ public sealed class NamingPattern : DiagnosticAnalyzer
             var targetName = target.ToString();
             foreach (var kvp in overrides)
             {
-                if (string.Equals(kvp.Key, targetName, StringComparison.OrdinalIgnoreCase))
+                if (SemanticFacts.IsSameName(kvp.Key, targetName))
                 {
                     setting = kvp.Value;
                     return true;

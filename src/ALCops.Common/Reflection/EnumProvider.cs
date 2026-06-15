@@ -508,6 +508,8 @@ public static class EnumProvider
             new(() => ParseEnum<NavCodeAnalysis.OperationKind>(nameof(NavCodeAnalysis.OperationKind.ReturnValueReferenceExpression)));
         private static readonly Lazy<NavCodeAnalysis.OperationKind> _xmlPortDataItemAccess =
             new(() => ParseEnum<NavCodeAnalysis.OperationKind>(nameof(NavCodeAnalysis.OperationKind.XmlPortDataItemAccess)));
+        private static readonly Lazy<NavCodeAnalysis.OperationKind> _compoundAssignmentStatement =
+            new(() => ParseEnum<NavCodeAnalysis.OperationKind>("CompoundAssignmentStatement"));
 
         public static NavCodeAnalysis.OperationKind AssignmentStatement => _assignmentStatement.Value;
         public static NavCodeAnalysis.OperationKind BinaryOperatorExpression => _binaryOperatorExpression.Value;
@@ -523,6 +525,7 @@ public static class EnumProvider
         public static NavCodeAnalysis.OperationKind ParameterReferenceExpression => _parameterReferenceExpression.Value;
         public static NavCodeAnalysis.OperationKind ReturnValueReferenceExpression => _returnValueReferenceExpression.Value;
         public static NavCodeAnalysis.OperationKind XmlPortDataItemAccess => _xmlPortDataItemAccess.Value;
+        public static NavCodeAnalysis.OperationKind CompoundAssignmentStatement => _compoundAssignmentStatement.Value;
     }
 
     /// <summary>
@@ -851,6 +854,12 @@ public static class EnumProvider
             new(() => ParseEnum<NavCodeAnalysis.SymbolKind>(nameof(NavCodeAnalysis.SymbolKind.XmlPort)));
         private static readonly Lazy<NavCodeAnalysis.SymbolKind> _xmlPortNode =
             new(() => ParseEnum<NavCodeAnalysis.SymbolKind>(nameof(NavCodeAnalysis.SymbolKind.XmlPortNode)));
+        private static readonly Lazy<NavCodeAnalysis.SymbolKind> _analysisView =
+#if NETSTANDARD2_1 || NET8_0
+            new(() => ParseEnum<NavCodeAnalysis.SymbolKind>("AnalysisView"));
+#else
+            new(() => ParseEnum<NavCodeAnalysis.SymbolKind>(nameof(NavCodeAnalysis.SymbolKind.AnalysisView)));
+#endif
 
         public static NavCodeAnalysis.SymbolKind Action => _action.Value;
         public static NavCodeAnalysis.SymbolKind Class => _class.Value;
@@ -885,6 +894,7 @@ public static class EnumProvider
         public static NavCodeAnalysis.SymbolKind Undefined => _undefined.Value;
         public static NavCodeAnalysis.SymbolKind XmlPort => _xmlPort.Value;
         public static NavCodeAnalysis.SymbolKind XmlPortNode => _xmlPortNode.Value;
+        public static NavCodeAnalysis.SymbolKind AnalysisView => _analysisView.Value;
     }
 
     /// <summary>
@@ -946,8 +956,12 @@ public static class EnumProvider
             new(() => ParseEnum<NavCodeAnalysis.SyntaxKind>(nameof(NavCodeAnalysis.SyntaxKind.EqualsToken)));
         private static readonly Lazy<NavCodeAnalysis.SyntaxKind> _greaterThanToken =
             new(() => ParseEnum<NavCodeAnalysis.SyntaxKind>(nameof(NavCodeAnalysis.SyntaxKind.GreaterThanToken)));
+        private static readonly Lazy<NavCodeAnalysis.SyntaxKind> _greaterThanEqualsToken =
+            new(() => ParseEnum<NavCodeAnalysis.SyntaxKind>(nameof(NavCodeAnalysis.SyntaxKind.GreaterThanEqualsToken)));
         private static readonly Lazy<NavCodeAnalysis.SyntaxKind> _lessThanToken =
             new(() => ParseEnum<NavCodeAnalysis.SyntaxKind>(nameof(NavCodeAnalysis.SyntaxKind.LessThanToken)));
+        private static readonly Lazy<NavCodeAnalysis.SyntaxKind> _lessThanEqualsToken =
+            new(() => ParseEnum<NavCodeAnalysis.SyntaxKind>(nameof(NavCodeAnalysis.SyntaxKind.LessThanEqualsToken)));
         private static readonly Lazy<NavCodeAnalysis.SyntaxKind> _endOfLineTrivia =
             new(() => ParseEnum<NavCodeAnalysis.SyntaxKind>(nameof(NavCodeAnalysis.SyntaxKind.EndOfLineTrivia)));
         private static readonly Lazy<NavCodeAnalysis.SyntaxKind> _enumExtensionType =
@@ -1084,6 +1098,36 @@ public static class EnumProvider
             new(() => ParseEnum<NavCodeAnalysis.SyntaxKind>(nameof(NavCodeAnalysis.SyntaxKind.PageSystemPart)));
         private static readonly Lazy<NavCodeAnalysis.SyntaxKind> _pageView =
             new(() => ParseEnum<NavCodeAnalysis.SyntaxKind>(nameof(NavCodeAnalysis.SyntaxKind.PageView)));
+        private static readonly Lazy<NavCodeAnalysis.SyntaxKind> _pageAnalysisView =
+#if NETSTANDARD2_1 || NET8_0
+            new(() => ParseEnum<NavCodeAnalysis.SyntaxKind>("PageAnalysisView"));
+#else
+            new(() => ParseEnum<NavCodeAnalysis.SyntaxKind>(nameof(NavCodeAnalysis.SyntaxKind.PageAnalysisView)));
+#endif
+        private static readonly Lazy<NavCodeAnalysis.SyntaxKind> _pageAnalysisViewList =
+#if NETSTANDARD2_1 || NET8_0
+            new(() => ParseEnum<NavCodeAnalysis.SyntaxKind>("PageAnalysisViewList"));
+#else
+            new(() => ParseEnum<NavCodeAnalysis.SyntaxKind>(nameof(NavCodeAnalysis.SyntaxKind.PageAnalysisViewList)));
+#endif
+        private static readonly Lazy<NavCodeAnalysis.SyntaxKind> _pageExtensionAnalysisViewList =
+#if NETSTANDARD2_1 || NET8_0
+            new(() => ParseEnum<NavCodeAnalysis.SyntaxKind>("PageExtensionAnalysisViewList"));
+#else
+            new(() => ParseEnum<NavCodeAnalysis.SyntaxKind>(nameof(NavCodeAnalysis.SyntaxKind.PageExtensionAnalysisViewList)));
+#endif
+        private static readonly Lazy<NavCodeAnalysis.SyntaxKind> _analysisViewAddChange =
+#if NETSTANDARD2_1 || NET8_0
+            new(() => ParseEnum<NavCodeAnalysis.SyntaxKind>("AnalysisViewAddChange"));
+#else
+            new(() => ParseEnum<NavCodeAnalysis.SyntaxKind>(nameof(NavCodeAnalysis.SyntaxKind.AnalysisViewAddChange)));
+#endif
+        private static readonly Lazy<NavCodeAnalysis.SyntaxKind> _analysisViewModifyChange =
+#if NETSTANDARD2_1 || NET8_0
+            new(() => ParseEnum<NavCodeAnalysis.SyntaxKind>("AnalysisViewModifyChange"));
+#else
+            new(() => ParseEnum<NavCodeAnalysis.SyntaxKind>(nameof(NavCodeAnalysis.SyntaxKind.AnalysisViewModifyChange)));
+#endif
         private static readonly Lazy<NavCodeAnalysis.SyntaxKind> _pageActionArea =
             new(() => ParseEnum<NavCodeAnalysis.SyntaxKind>(nameof(NavCodeAnalysis.SyntaxKind.PageActionArea)));
         private static readonly Lazy<NavCodeAnalysis.SyntaxKind> _pageActionGroup =
@@ -1214,7 +1258,9 @@ public static class EnumProvider
         public static NavCodeAnalysis.SyntaxKind EmptyProperty => _emptyProperty.Value;
         public static NavCodeAnalysis.SyntaxKind EqualsToken => _equalsToken.Value;
         public static NavCodeAnalysis.SyntaxKind GreaterThanToken => _greaterThanToken.Value;
+        public static NavCodeAnalysis.SyntaxKind GreaterThanEqualsToken => _greaterThanEqualsToken.Value;
         public static NavCodeAnalysis.SyntaxKind LessThanToken => _lessThanToken.Value;
+        public static NavCodeAnalysis.SyntaxKind LessThanEqualsToken => _lessThanEqualsToken.Value;
         public static NavCodeAnalysis.SyntaxKind EndOfLineTrivia => _endOfLineTrivia.Value;
         public static NavCodeAnalysis.SyntaxKind EnumExtensionType => _enumExtensionType.Value;
         public static NavCodeAnalysis.SyntaxKind EnumDataType => _enumDataType.Value;
@@ -1281,6 +1327,11 @@ public static class EnumProvider
         public static NavCodeAnalysis.SyntaxKind PageSystemAction => _pageSystemAction.Value;
         public static NavCodeAnalysis.SyntaxKind PageSystemPart => _pageSystemPart.Value;
         public static NavCodeAnalysis.SyntaxKind PageView => _pageView.Value;
+        public static NavCodeAnalysis.SyntaxKind PageAnalysisView => _pageAnalysisView.Value;
+        public static NavCodeAnalysis.SyntaxKind PageAnalysisViewList => _pageAnalysisViewList.Value;
+        public static NavCodeAnalysis.SyntaxKind PageExtensionAnalysisViewList => _pageExtensionAnalysisViewList.Value;
+        public static NavCodeAnalysis.SyntaxKind AnalysisViewAddChange => _analysisViewAddChange.Value;
+        public static NavCodeAnalysis.SyntaxKind AnalysisViewModifyChange => _analysisViewModifyChange.Value;
         public static NavCodeAnalysis.SyntaxKind PageActionArea => _pageActionArea.Value;
         public static NavCodeAnalysis.SyntaxKind PageActionGroup => _pageActionGroup.Value;
         public static NavCodeAnalysis.SyntaxKind PageActionSeparator => _pageActionSeparator.Value;

@@ -11,7 +11,7 @@ namespace ALCops.LinterCop.Analyzers;
 [DiagnosticAnalyzer]
 public sealed class CyclomaticComplexityAndMaintainabilityIndex : DiagnosticAnalyzer
 {
-    private static readonly HashSet<string> EventPublisherDecoratorNames = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly HashSet<string> EventPublisherDecoratorNames = new(SemanticFacts.NameEqualityComparer)
     {
         "BusinessEvent",
         "IntegrationEvent",
@@ -72,7 +72,7 @@ public sealed class CyclomaticComplexityAndMaintainabilityIndex : DiagnosticAnal
         }
 
         var settings = ALCopsSettingsProvider.GetSettings(
-            context.SemanticModel.Compilation.FileSystem?.GetDirectoryPath());
+            context.SemanticModel.Compilation.FileSystem);
 
         var descendantNodesAndTokens = methodOrTrigger.Body.DescendantNodesAndTokens(static _ => true);
         var cyclomaticComplexity = CalculateCyclomaticComplexityMetric(context, body, descendantNodesAndTokens);

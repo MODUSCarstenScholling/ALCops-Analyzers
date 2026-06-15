@@ -20,14 +20,14 @@ public sealed class PlaceholderArgumentCountMismatch : DiagnosticAnalyzer
 {
     private static readonly Regex PlaceholderPattern = new("[#%](\\d+)", RegexOptions.Compiled);
 
-    private static readonly HashSet<string> MethodsCoveredByAA0131 = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly HashSet<string> MethodsCoveredByAA0131 = new(SemanticFacts.NameEqualityComparer)
     {
         "StrSubstNo",
         "Message",
         "Error"
     };
 
-    private static readonly HashSet<string> AllTargetMethods = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly HashSet<string> AllTargetMethods = new(SemanticFacts.NameEqualityComparer)
     {
         "StrSubstNo",
         "Message",
@@ -87,7 +87,7 @@ public sealed class PlaceholderArgumentCountMismatch : DiagnosticAnalyzer
     /// </summary>
     private static int GetSubstitutionArgumentCount(string methodName, int totalArguments)
     {
-        if (string.Equals(methodName, "Confirm", StringComparison.OrdinalIgnoreCase))
+        if (SemanticFacts.IsSameName(methodName, "Confirm"))
         {
             // Confirm: args[0]=format, args[1]=default button (Boolean, required if subs present)
             // If only 1 arg (format only) or 2 args (format + default): 0 subs
