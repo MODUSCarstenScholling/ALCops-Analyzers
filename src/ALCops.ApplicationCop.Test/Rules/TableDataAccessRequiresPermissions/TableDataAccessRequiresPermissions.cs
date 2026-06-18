@@ -26,11 +26,18 @@ namespace ALCops.ApplicationCop.Test
         [TestCase("GetBySystemId")]
         [TestCase("Count")]
         [TestCase("ImplicitSelfCallInTable")]
+        [TestCase("ThisKeywordSelfCallInTable")]
         [TestCase("XmlPorts")]
         [TestCase("Queries")]
         [TestCase("Reports")]
         public async Task HasDiagnostic(string testCase)
         {
+            SkipTestIfVersionIsTooLow(
+                ["ThisKeywordSelfCallInTable"],
+                testCase,
+                "14.0",
+                "The 'this' self-reference keyword requires runtime version 14.0 (BC 2024 wave 2).");
+
             var code = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(HasDiagnostic), $"{testCase}.al"))
                 .ConfigureAwait(false);
 
