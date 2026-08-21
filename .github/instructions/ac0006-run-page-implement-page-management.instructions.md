@@ -32,7 +32,7 @@ Triggers on `InvocationExpression` operations where:
 The CodeFix (`RunPageImplementPageManagementCodeFixProvider`) performs three transformations:
 
 1. **Replace invocation**: `Page.Run(0, Rec)` → `PageManagement.PageRun(Rec)`
-2. **Add variable**: If no existing `Codeunit "Page Management"` variable exists (local or global), adds `PageManagement: Codeunit "Page Management"` as a local variable
+2. **Add variable**: If no existing replacement-codeunit variable exists (local or global), adds a local variable using the configured replacement and the applicable local-variable naming pattern
 3. **Add using directive**: If the file has a `namespace` declaration and `using Microsoft.Utilities;` is not already present, adds it in sorted order among existing usings
 
 ## Design decisions
@@ -49,4 +49,4 @@ The CodeFix (`RunPageImplementPageManagementCodeFixProvider`) performs three tra
 
 **HasDiagnostic (4 cases):** PageRunModalPageIdentifierAndRecord, PageRunModalZeroIdentifierAndRecord, PageRunPageIdentifierAndRecord, PageRunZeroIdentifierAndRecord.
 **NoDiagnostic (2 cases):** PageRunPageIdentifierWithoutRecord, PageRunWithReturnTypeAction.
-**HasFix (7 cases):** PageRunModelPageIdentifierAndRecord, PageRunModelPageIdentifierAndRecordWithPageFIeld, PageRunPageIdentifierAndRecord, PageRunPageIdentifierAndRecordWithPageField, PageRunZeroIdentifierAndRecord, PageRunZeroIdentifierAndRecordWithNamespace, PageRunPageIdentifierAndRecordWithNamespaceAndUsing.
+**HasFix (11 cases):** PageRunModelPageIdentifierAndRecord, PageRunModelPageIdentifierAndRecordWithPageFIeld, PageRunPageIdentifierAndRecord, PageRunPageIdentifierAndRecordWithPageField, PageRunZeroIdentifierAndRecord, PageRunZeroIdentifierAndRecordWithNamespace, PageRunPageIdentifierAndRecordWithNamespaceAndUsing, PageRunConfiguredReplacement, PageRunConfiguredCamelCaseReplacement, PageRunWithExistingLocalPageManagement, PageRunWithExistingGlobalPageManagement.

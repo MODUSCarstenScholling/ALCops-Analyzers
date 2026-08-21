@@ -273,6 +273,9 @@
   <data name="LineSeparatorShouldUseTypeHelperDescription" xml:space="preserve">
     <value>Avoid manually creating helper methods or assigning character values (e.g., Char := 10 or Text[1] := 10) to define line feed (LF) or carriage return (CR) variables. Instead, use the LFSeparator and CRLFSeparator constants provided by the "Type Helper" codeunit from the Base Application.</value>
   </data>
+  <data name="LineSeparatorShouldUseTypeHelperCodeAction" xml:space="preserve">
+    <value>ALCops: Use Type Helper separator</value>
+  </data>
   <data name="LookupPageIdAndDrillDownPageIdTitle" xml:space="preserve">
     <value>DrillDownPageId and LookupPageId property must be defined for tables used in list pages</value>
   </data>

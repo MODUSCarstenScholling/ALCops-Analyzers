@@ -114,25 +114,24 @@ public sealed class RunPageImplementPageManagementCodeFixProvider : CodeFixProvi
         if (originalInvocation is null)
             return document;
 
-        var containingMethodOrTrigger = ConfiguredCodeunitReplacementCodeFixHelper.GetContainingMethodOrTrigger(originalInvocation);
+        var containingMethodOrTrigger = ConfiguredObjectReplacementCodeFixHelper.GetContainingMethodOrTrigger(originalInvocation);
         if (containingMethodOrTrigger is null)
             return document;
 
-        var containingObject = ConfiguredCodeunitReplacementCodeFixHelper.GetContainingApplicationObject(containingMethodOrTrigger);
+        var containingObject = ConfiguredObjectReplacementCodeFixHelper.GetContainingApplicationObject(containingMethodOrTrigger);
         if (containingObject is null)
             return document;
 
         var replacement = properties.Replacement;
 
-        var existingVariableName = ConfiguredCodeunitReplacementCodeFixHelper.FindExistingCodeunitVariable(
+        var replacementTarget = ConfiguredObjectReplacementCodeFixHelper.ResolveReplacementTarget(
             containingMethodOrTrigger,
             containingObject,
-            replacement.VariableSubtypeName);
-
-        var variableName = existingVariableName ?? replacement.VariableName;
-
-        if (string.IsNullOrWhiteSpace(variableName))
+            replacement);
+        if (replacementTarget is null)
             return document;
+
+        var variableName = replacementTarget.VariableName;
 
         // Define the corresponding method key based on original invocation and map to configured method name.
         if (originalInvocation.Expression is not MemberAccessExpressionSyntax)
@@ -177,11 +176,11 @@ public sealed class RunPageImplementPageManagementCodeFixProvider : CodeFixProvi
         }
 
         // If needed add "Page Management" codeunit as a local variable
-        if (existingVariableName is null)
+        if (replacementTarget.RequiresLocalDeclaration)
         {
             var updatedMethodOrTrigger = newRoot.GetCurrentNode(containingMethodOrTrigger);
             if (updatedMethodOrTrigger is not null)
-                newRoot = ConfiguredCodeunitReplacementCodeFixHelper.AddLocalVariable(newRoot, updatedMethodOrTrigger, variableName, replacement.VariableSubtypeName);
+            newRoot = ConfiguredObjectReplacementCodeFixHelper.AddLocalVariable(newRoot, updatedMethodOrTrigger, variableName, replacement);
         }
 
 #if NET8_0_OR_GREATER

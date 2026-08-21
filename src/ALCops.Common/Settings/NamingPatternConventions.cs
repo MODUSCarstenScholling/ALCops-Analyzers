@@ -217,7 +217,8 @@ public static class NamingPatternConventions
     {
         foreach (var existingName in names)
         {
-            if (SemanticFacts.IsSameName(existingName, name))
+            // Keep case variants so case-sensitive naming patterns can choose between PageMgt and pageMgt.
+            if (string.Equals(existingName, name, StringComparison.Ordinal))
                 return true;
         }
 

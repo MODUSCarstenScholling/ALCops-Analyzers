@@ -23,6 +23,26 @@ namespace ALCops.ApplicationCop.Test
                                 }
                                 """);
 
+        private static readonly byte[] ConfiguredCamelCaseReplacementSettings =
+            System.Text.Encoding.UTF8.GetBytes(
+                """
+                {
+                    "NamingPatterns": {
+                        "LocalVariable": {
+                            "AllowPattern": "^[a-z][A-Za-z0-9]*$"
+                        }
+                    },
+                    "CodeFixOverrides": {
+                        "AC0006": {
+                            "Variable": "pageMgt: Codeunit \"Page Mgt\";",
+                            "Methods": {
+                                "PageRun": "RunPage"
+                            }
+                        }
+                    }
+                }
+                """);
+
         private AnalyzerTestFixture _fixture;
         private static readonly Analyzers.RunPageImplementPageManagement _analyzer = new();
         private string _testCasePath;
@@ -67,6 +87,8 @@ namespace ALCops.ApplicationCop.Test
         [TestCase("PageRunModelPageIdentifierAndRecordWithPageFIeld")]
         [TestCase("PageRunPageIdentifierAndRecord")]
         [TestCase("PageRunPageIdentifierAndRecordWithPageField")]
+        [TestCase("PageRunWithExistingGlobalPageManagement")]
+        [TestCase("PageRunWithExistingLocalPageManagement")]
         [TestCase("PageRunZeroIdentifierAndRecord")]
         public async Task HasFix(string testCase)
         {
@@ -126,6 +148,29 @@ namespace ALCops.ApplicationCop.Test
                     FileSystem = new MemoryFileSystem(new Dictionary<string, byte[]>
                     {
                         { "alcops.json", ConfiguredReplacementSettings }
+                    })
+                });
+
+            fixture.TestCodeFix(currentCode, expectedCode, DiagnosticDescriptors.RunPageImplementPageManagement);
+        }
+
+        [Test]
+        [TestCase("PageRunConfiguredCamelCaseReplacement")]
+        public async Task HasFixWithConfiguredCamelCaseReplacement(string testCase)
+        {
+            var currentCode = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(HasFix), testCase, "current.al"))
+                .ConfigureAwait(false);
+
+            var expectedCode = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(HasFix), testCase, "expected.al"))
+                .ConfigureAwait(false);
+
+            var fixture = RoslynFixtureFactory.Create<RunPageImplementPageManagementCodeFixProvider>(
+                new CodeFixTestFixtureConfig
+                {
+                    AdditionalAnalyzers = [_analyzer],
+                    FileSystem = new MemoryFileSystem(new Dictionary<string, byte[]>
+                    {
+                        { "alcops.json", ConfiguredCamelCaseReplacementSettings }
                     })
                 });
 

@@ -117,25 +117,24 @@ public sealed class GlobalLanguageImplementTranslationHelperCodeFixProvider : Co
         // For assignment we want to replace the whole statement; for invocation we replace the invocation expression.
         SyntaxNode anchorNode = (SyntaxNode?)originalAssignment ?? originalInvocation!;
 
-        var containingMethodOrTrigger = ConfiguredCodeunitReplacementCodeFixHelper.GetContainingMethodOrTrigger(anchorNode);
+        var containingMethodOrTrigger = ConfiguredObjectReplacementCodeFixHelper.GetContainingMethodOrTrigger(anchorNode);
         if (containingMethodOrTrigger is null)
             return document;
 
-        var containingObject = ConfiguredCodeunitReplacementCodeFixHelper.GetContainingApplicationObject(containingMethodOrTrigger);
+        var containingObject = ConfiguredObjectReplacementCodeFixHelper.GetContainingApplicationObject(containingMethodOrTrigger);
         if (containingObject is null)
             return document;
 
         var replacement = properties.Replacement;
 
-        var existingVariableName = ConfiguredCodeunitReplacementCodeFixHelper.FindExistingCodeunitVariable(
+        var replacementTarget = ConfiguredObjectReplacementCodeFixHelper.ResolveReplacementTarget(
             containingMethodOrTrigger,
             containingObject,
-            replacement.VariableSubtypeName);
-
-        var variableName = existingVariableName ?? replacement.VariableName;
-
-        if (string.IsNullOrWhiteSpace(variableName))
+            replacement);
+        if (replacementTarget is null)
             return document;
+
+        var variableName = replacementTarget.VariableName;
 
         // Track nodes across edits so we always operate on nodes from the current tree
         var root = await syntaxRootTask.ConfigureAwait(false);
@@ -200,11 +199,11 @@ public sealed class GlobalLanguageImplementTranslationHelperCodeFixProvider : Co
         }
 
         // If needed add "Translation Helper" codeunit as a local variable
-        if (existingVariableName is null)
+        if (replacementTarget.RequiresLocalDeclaration)
         {
             var updatedMethodOrTrigger = newRoot.GetCurrentNode(containingMethodOrTrigger);
             if (updatedMethodOrTrigger is not null)
-                newRoot = ConfiguredCodeunitReplacementCodeFixHelper.AddLocalVariable(newRoot, updatedMethodOrTrigger, variableName, replacement.VariableSubtypeName);
+            newRoot = ConfiguredObjectReplacementCodeFixHelper.AddLocalVariable(newRoot, updatedMethodOrTrigger, variableName, replacement);
         }
 
         return document.WithSyntaxRoot(newRoot);

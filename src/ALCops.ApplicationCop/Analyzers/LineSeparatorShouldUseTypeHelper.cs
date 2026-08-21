@@ -13,6 +13,7 @@ namespace ALCops.ApplicationCop.Analyzers;
 [DiagnosticAnalyzer]
 public sealed class LineSeparatorShouldUseTypeHelper : DiagnosticAnalyzer
 {
+    private const int CrlfCarriageReturnAscii = 13;
     private const int LfAscii = 10;
     private const string DefaultVariableDeclaration = "TypeHelper: Codeunit \"Type Helper\";";
     private const string LfSeparatorMethodKey = "LFSeparator";
@@ -36,12 +37,27 @@ public sealed class LineSeparatorShouldUseTypeHelper : DiagnosticAnalyzer
         if (ctx.Operation is not IAssignmentStatement assignment)
             return;
 
-        if (!TryGetIntLiteralValue(assignment.Value, out int rhsValue) || rhsValue != LfAscii)
+        if (!TryGetIntLiteralValue(assignment.Value, out var rhsValue))
             return;
 
-        if (!IsValidLfSeparatorTarget(assignment.Target))
+        if (rhsValue == CrlfCarriageReturnAscii && TryGetCrlfPair(ctx, assignment, out _))
+        {
+            ReportDiagnostic(ctx);
             return;
+        }
 
+        if (rhsValue != LfAscii ||
+            IsCrlfSecondAssignment(ctx, assignment) ||
+            !IsValidLfSeparatorTarget(assignment.Target))
+        {
+            return;
+        }
+
+        ReportDiagnostic(ctx);
+    }
+
+    private static void ReportDiagnostic(OperationAnalysisContext ctx)
+    {
         var properties = CreateReplacementProperties(ctx);
 
         ctx.ReportDiagnostic(
@@ -50,6 +66,133 @@ public sealed class LineSeparatorShouldUseTypeHelper : DiagnosticAnalyzer
                 ctx.Operation.Syntax.GetLocation(),
                 properties,
                 Array.Empty<object>()));
+    }
+
+    private static bool IsCrlfSecondAssignment(OperationAnalysisContext ctx, IAssignmentStatement assignment)
+    {
+        var semanticModel = ctx.Compilation.GetSemanticModel(ctx.Operation.Syntax.SyntaxTree);
+        if (!TryGetAdjacentAssignment(semanticModel, assignment, ctx.CancellationToken, -1, out var previousAssignment))
+            return false;
+
+        return TryGetIntLiteralValue(previousAssignment.Value, out var previousValue) &&
+               previousValue == CrlfCarriageReturnAscii &&
+               IsCrlfPair(semanticModel, previousAssignment, assignment, ctx.CancellationToken);
+    }
+
+    private static bool TryGetCrlfPair(
+        OperationAnalysisContext ctx,
+        IAssignmentStatement assignment,
+        out IAssignmentStatement nextAssignment)
+    {
+        nextAssignment = null!;
+
+        var semanticModel = ctx.Compilation.GetSemanticModel(ctx.Operation.Syntax.SyntaxTree);
+        if (!TryGetAdjacentAssignment(semanticModel, assignment, ctx.CancellationToken, 1, out nextAssignment))
+            return false;
+
+        return TryGetIntLiteralValue(nextAssignment.Value, out var nextValue) &&
+               nextValue == LfAscii &&
+               IsCrlfPair(semanticModel, assignment, nextAssignment, ctx.CancellationToken);
+    }
+
+    private static bool IsCrlfPair(
+        SemanticModel semanticModel,
+        IAssignmentStatement carriageReturnAssignment,
+        IAssignmentStatement lineFeedAssignment,
+        CancellationToken cancellationToken)
+    {
+        return IsTextCrlfPair(
+                   semanticModel,
+                   carriageReturnAssignment.Target,
+                   lineFeedAssignment.Target,
+                   cancellationToken) ||
+               (IsCharVariable(carriageReturnAssignment.Target) && IsCharVariable(lineFeedAssignment.Target));
+    }
+
+    private static bool IsTextCrlfPair(
+        SemanticModel semanticModel,
+        IOperation carriageReturnTarget,
+        IOperation lineFeedTarget,
+        CancellationToken cancellationToken)
+    {
+        return TryGetTextElementAccess(
+                   semanticModel,
+                   carriageReturnTarget,
+                   1,
+                   cancellationToken,
+                   out var carriageReturnVariableName) &&
+               TryGetTextElementAccess(
+                   semanticModel,
+                   lineFeedTarget,
+                   2,
+                   cancellationToken,
+                   out var lineFeedVariableName) &&
+               carriageReturnVariableName.IsSameName(lineFeedVariableName);
+    }
+
+    private static bool TryGetTextElementAccess(
+        SemanticModel semanticModel,
+        IOperation targetOperation,
+        int expectedIndex,
+        CancellationToken cancellationToken,
+        out string? variableName)
+    {
+        variableName = null;
+
+        if (targetOperation.Kind != EnumProvider.OperationKind.FieldAccess ||
+            targetOperation.Syntax is not ElementAccessExpressionSyntax elementAccess ||
+            elementAccess.Expression is not IdentifierNameSyntax identifierName)
+        {
+            return false;
+        }
+
+        if (!TryGetElementAccessIndex(elementAccess, out var index) || index != expectedIndex)
+            return false;
+
+        var variableOperation = semanticModel.GetOperation(elementAccess.Expression, cancellationToken);
+        if (variableOperation?.Type?.GetNavTypeKindSafe() != EnumProvider.NavTypeKind.Text)
+            return false;
+
+        variableName = identifierName.Identifier.ValueText;
+        return !string.IsNullOrWhiteSpace(variableName);
+    }
+
+    private static bool TryGetAdjacentAssignment(
+        SemanticModel semanticModel,
+        IAssignmentStatement assignment,
+        CancellationToken cancellationToken,
+        int offset,
+        out IAssignmentStatement adjacentAssignment)
+    {
+        adjacentAssignment = null!;
+
+        if (assignment.Syntax is not AssignmentStatementSyntax assignmentSyntax ||
+            assignmentSyntax.Parent is not BlockSyntax block)
+        {
+            return false;
+        }
+
+        for (int index = 0; index < block.Statements.Count; index++)
+        {
+            if (!ReferenceEquals(block.Statements[index], assignmentSyntax))
+                continue;
+
+            var adjacentIndex = index + offset;
+            if (adjacentIndex < 0 || adjacentIndex >= block.Statements.Count ||
+                block.Statements[adjacentIndex] is not AssignmentStatementSyntax adjacentSyntax)
+            {
+                return false;
+            }
+
+            var operation = semanticModel.GetOperation(adjacentSyntax, cancellationToken) as IAssignmentStatement;
+            if (operation is null)
+                return false;
+
+            adjacentAssignment = operation;
+            return true;
+        }
+
+        return false;
     }
 
     private static ImmutableDictionary<string, string> CreateReplacementProperties(OperationAnalysisContext ctx)
@@ -95,23 +238,23 @@ public sealed class LineSeparatorShouldUseTypeHelper : DiagnosticAnalyzer
         if (targetSyntax is not ElementAccessExpressionSyntax elementAccess)
             return false;
 
+        return TryGetElementAccessIndex(elementAccess, out var indexValue) &&
+               (indexValue == 1 || indexValue == 2);
+    }
+
+    private static bool TryGetElementAccessIndex(ElementAccessExpressionSyntax elementAccess, out int index)
+    {
+        index = default;
+
         var argumentList = elementAccess.ArgumentList;
-        if (argumentList is null)
+        if (argumentList is null || argumentList.Arguments.Count != 1 ||
+            argumentList.Arguments[0] is not LiteralExpressionSyntax indexLiteral ||
+            indexLiteral.Literal is not Int32SignedLiteralValueSyntax indexInt)
+        {
             return false;
+        }
 
-        var args = argumentList.Arguments;
-
-        if (args.Count != 1)
-            return false;
-
-        if (args[0] is not LiteralExpressionSyntax indexLiteral)
-            return false;
-
-        if (indexLiteral.Literal is not Int32SignedLiteralValueSyntax indexInt)
-            return false;
-
-        var indexValue = indexInt.GetIdentifierOrLiteralValue();
-        return indexValue == "1" || indexValue == "2";
+        return int.TryParse(indexInt.GetIdentifierOrLiteralValue(), out index);
     }
 
     private static bool IsCharVariable(IOperation targetOperation)

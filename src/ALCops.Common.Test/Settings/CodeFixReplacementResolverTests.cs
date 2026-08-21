@@ -43,6 +43,63 @@ public class CodeFixReplacementResolverTests
     }
 
     [Test]
+    public void ResolveCodeFixReplacement_UsesConfiguredCamelCaseLocalVariable()
+    {
+        var settings = new ALCopsSettings
+        {
+            NamingPatterns = new Dictionary<string, NamingPattern>
+            {
+                ["LocalVariable"] = new NamingPattern
+                {
+                    AllowPattern = "^[a-z][A-Za-z0-9]*$"
+                }
+            },
+            CodeFixOverrides = new Dictionary<string, CodeFixOverride>
+            {
+                ["AC0006"] = new CodeFixOverride
+                {
+                    Variable = "pageMgt: Codeunit \"Page Mgt\";"
+                }
+            }
+        };
+
+        var resolved = CodeFixReplacementResolver.ResolveCodeFixReplacement(
+            settings,
+            "AC0006",
+            new CodeFixReplacementDefaults("PageManagement: Codeunit \"Page Management\";"),
+            NamingPatternTarget.LocalVariable);
+
+        Assert.That(resolved.VariableName, Is.EqualTo("pageMgt"));
+        Assert.That(resolved.VariableTypeKeyword, Is.EqualTo("Codeunit"));
+        Assert.That(resolved.VariableSubtypeName, Is.EqualTo("Page Mgt"));
+    }
+
+    [Test]
+    public void ResolveCodeFixReplacement_NormalizesConfiguredLocalVariableToPascalCase()
+    {
+        var settings = new ALCopsSettings
+        {
+            CodeFixOverrides = new Dictionary<string, CodeFixOverride>
+            {
+                ["AC0006"] = new CodeFixOverride
+                {
+                    Variable = "pageMgt: Codeunit \"Page Mgt\";"
+                }
+            }
+        };
+
+        var resolved = CodeFixReplacementResolver.ResolveCodeFixReplacement(
+            settings,
+            "AC0006",
+            new CodeFixReplacementDefaults("PageManagement: Codeunit \"Page Management\";"),
+            NamingPatternTarget.LocalVariable);
+
+        Assert.That(resolved.VariableName, Is.EqualTo("PageMgt"));
+        Assert.That(resolved.VariableTypeKeyword, Is.EqualTo("Codeunit"));
+        Assert.That(resolved.VariableSubtypeName, Is.EqualTo("Page Mgt"));
+    }
+
+    [Test]
     public void ResolveCodeFixReplacement_DerivesNameWhenVariableHasNoName()
     {
         var settings = new ALCopsSettings
