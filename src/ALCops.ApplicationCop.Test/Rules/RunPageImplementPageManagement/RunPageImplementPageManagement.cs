@@ -1,10 +1,28 @@
 using ALCops.ApplicationCop.CodeFixes;
+using Microsoft.Dynamics.Nav.CodeAnalysis;
 using RoslynTestKit;
 
 namespace ALCops.ApplicationCop.Test
 {
     public class RunPageImplementPageManagement : NavCodeAnalysisBase
     {
+                private static readonly byte[] ConfiguredReplacementSettings =
+                        System.Text.Encoding.UTF8.GetBytes(
+                                """
+                                {
+                                    "CodeFixOverrides": {
+                                        "AC0006": {
+                                            "Variable": "Codeunit \"My Page Mgt\";",
+                                            "Methods": {
+                                                "PageRun": "RunPage",
+                                                "PageRunModal": "RunPageModal",
+                                                "PageRunAtField": "RunPageAtField"
+                                            }
+                                        }
+                                    }
+                                }
+                                """);
+
         private AnalyzerTestFixture _fixture;
         private static readonly Analyzers.RunPageImplementPageManagement _analyzer = new();
         private string _testCasePath;
@@ -64,7 +82,7 @@ namespace ALCops.ApplicationCop.Test
                     AdditionalAnalyzers = [_analyzer]
                 });
 
-            fixture.TestCodeFix(currentCode, expectedCode, DiagnosticDescriptors.NotBlankRequiredOnPrimaryKeyField);
+            fixture.TestCodeFix(currentCode, expectedCode, DiagnosticDescriptors.RunPageImplementPageManagement);
         }
 
         [Test]
@@ -88,7 +106,30 @@ namespace ALCops.ApplicationCop.Test
                     AdditionalAnalyzers = [_analyzer]
                 });
 
-            fixture.TestCodeFix(currentCode, expectedCode, DiagnosticDescriptors.NotBlankRequiredOnPrimaryKeyField);
+            fixture.TestCodeFix(currentCode, expectedCode, DiagnosticDescriptors.RunPageImplementPageManagement);
+        }
+
+        [Test]
+        [TestCase("PageRunConfiguredReplacement")]
+        public async Task HasFixWithConfiguredReplacement(string testCase)
+        {
+            var currentCode = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(HasFix), testCase, "current.al"))
+                .ConfigureAwait(false);
+
+            var expectedCode = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(HasFix), testCase, "expected.al"))
+                .ConfigureAwait(false);
+
+            var fixture = RoslynFixtureFactory.Create<RunPageImplementPageManagementCodeFixProvider>(
+                new CodeFixTestFixtureConfig
+                {
+                    AdditionalAnalyzers = [_analyzer],
+                    FileSystem = new MemoryFileSystem(new Dictionary<string, byte[]>
+                    {
+                        { "alcops.json", ConfiguredReplacementSettings }
+                    })
+                });
+
+            fixture.TestCodeFix(currentCode, expectedCode, DiagnosticDescriptors.RunPageImplementPageManagement);
         }
     }
 }

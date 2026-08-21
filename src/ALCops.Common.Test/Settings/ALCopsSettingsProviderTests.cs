@@ -292,4 +292,36 @@ public class ALCopsSettingsProviderTests
         Assert.That(settings.KnownAcronyms, Is.Not.Null);
         Assert.That(settings.KnownAcronyms, Is.Empty);
     }
+
+        [Test]
+        public void GetSettings_ParsesCodeFixOverrides()
+        {
+                var appFolder = Path.Combine(_tempRoot, "App1");
+                Directory.CreateDirectory(appFolder);
+
+                File.WriteAllText(
+                        Path.Combine(appFolder, "alcops.json"),
+                        """
+                        {
+                            "CodeFixOverrides": {
+                                "AC0006": {
+                                    "Variable": "myPageMgt: Codeunit \"My Page Mgt\";",
+                                    "Methods": {
+                                        "PageRun": "RunPage"
+                                    }
+                                }
+                            }
+                        }
+                        """);
+
+                var settings = ALCopsSettingsProvider.GetSettings(new RelativeFileSystem(appFolder));
+
+                Assert.That(settings.CodeFixOverrides, Is.Not.Null);
+                Assert.That(settings.CodeFixOverrides!.ContainsKey("AC0006"), Is.True);
+
+                var overrideConfig = settings.CodeFixOverrides["AC0006"];
+                Assert.That(overrideConfig.Variable, Is.EqualTo("myPageMgt: Codeunit \"My Page Mgt\";"));
+                Assert.That(overrideConfig.Methods, Is.Not.Null);
+                Assert.That(overrideConfig.Methods!["PageRun"], Is.EqualTo("RunPage"));
+        }
 }

@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using ALCops.Common.Extensions;
 using ALCops.Common.Reflection;
+using ALCops.Common.Settings;
 using Microsoft.Dynamics.Nav.CodeAnalysis;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Diagnostics;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Semantics;
@@ -13,6 +14,9 @@ namespace ALCops.ApplicationCop.Analyzers;
 public sealed class LineSeparatorShouldUseTypeHelper : DiagnosticAnalyzer
 {
     private const int LfAscii = 10;
+    private const string DefaultVariableDeclaration = "TypeHelper: Codeunit \"Type Helper\";";
+    private const string LfSeparatorMethodKey = "LFSeparator";
+    private const string CrlfSeparatorMethodKey = "CRLFSeparator";
 
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
         ImmutableArray.Create(
@@ -38,10 +42,33 @@ public sealed class LineSeparatorShouldUseTypeHelper : DiagnosticAnalyzer
         if (!IsValidLfSeparatorTarget(assignment.Target))
             return;
 
+        var properties = CreateReplacementProperties(ctx);
+
         ctx.ReportDiagnostic(
             Diagnostic.Create(
                 DiagnosticDescriptors.LineSeparatorShouldUseTypeHelper,
-                ctx.Operation.Syntax.GetLocation()));
+                ctx.Operation.Syntax.GetLocation(),
+                properties,
+                Array.Empty<object>()));
+    }
+
+    private static ImmutableDictionary<string, string> CreateReplacementProperties(OperationAnalysisContext ctx)
+    {
+        var settings = ALCopsSettingsProvider.GetSettings(ctx.Compilation.FileSystem);
+        var replacement = CodeFixReplacementResolver.ResolveCodeFixReplacement(
+            settings,
+            DiagnosticIds.LineSeparatorShouldUseTypeHelper,
+            new CodeFixReplacementDefaults(
+                DefaultVariableDeclaration,
+                new Dictionary<string, string>
+                {
+                    [LfSeparatorMethodKey] = LfSeparatorMethodKey,
+                    [CrlfSeparatorMethodKey] = CrlfSeparatorMethodKey,
+                }),
+            NamingPatternTarget.LocalVariable,
+            ConfiguredCodeFixReplacementAnalyzerHelper.CollectReservedNames(ctx.ContainingSymbol));
+
+        return CodeFixReplacementPropertyBag.Create(replacement);
     }
 
     private static bool IsValidLfSeparatorTarget(IOperation targetOperation)

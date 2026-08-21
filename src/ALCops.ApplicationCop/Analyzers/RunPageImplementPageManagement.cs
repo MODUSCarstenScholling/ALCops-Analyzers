@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using ALCops.Common.Extensions;
 using ALCops.Common.Reflection;
+using ALCops.Common.Settings;
 using Microsoft.Dynamics.Nav.CodeAnalysis;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Diagnostics;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Symbols;
@@ -11,6 +12,11 @@ namespace ALCops.ApplicationCop.Analyzers;
 [DiagnosticAnalyzer]
 public sealed class RunPageImplementPageManagement : DiagnosticAnalyzer
 {
+    private const string DefaultVariableDeclaration = "PageManagement: Codeunit \"Page Management\";";
+    private const string PageRunMethodKey = "PageRun";
+    private const string PageRunModalMethodKey = "PageRunModal";
+    private const string PageRunAtFieldMethodKey = "PageRunAtField";
+
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
         ImmutableArray.Create(
             DiagnosticDescriptors.RunPageImplementPageManagement);
@@ -81,16 +87,42 @@ public sealed class RunPageImplementPageManagement : DiagnosticAnalyzer
                 if (invocation.Arguments[0].Syntax.GetIdentifierOrLiteralValue() == "0")
                     ctx.ReportDiagnostic(Diagnostic.Create(
                         DiagnosticDescriptors.RunPageImplementPageManagement,
-                        ctx.Operation.Syntax.GetLocation()));
+                        ctx.Operation.Syntax.GetLocation(),
+                        CreateReplacementProperties(ctx),
+                        Array.Empty<object>()));
                 break;
 
             case var _ when syntaxKind == EnumProvider.SyntaxKind.OptionAccessExpression:
                 if (IsSupportedRecord(((IConversionExpression)invocation.Arguments[1].Value).Operand))
                     ctx.ReportDiagnostic(Diagnostic.Create(
                         DiagnosticDescriptors.RunPageImplementPageManagement,
-                        ctx.Operation.Syntax.GetLocation()));
+                        ctx.Operation.Syntax.GetLocation(),
+                        CreateReplacementProperties(ctx),
+                        Array.Empty<object>()));
                 break;
         }
+    }
+
+    private static ImmutableDictionary<string, string> CreateReplacementProperties(OperationAnalysisContext ctx)
+    {
+        var settings = ALCopsSettingsProvider.GetSettings(ctx.Compilation.FileSystem);
+        var reservedNames = ConfiguredCodeFixReplacementAnalyzerHelper.CollectReservedNames(ctx.ContainingSymbol);
+
+        var replacement = CodeFixReplacementResolver.ResolveCodeFixReplacement(
+            settings,
+            DiagnosticIds.RunPageImplementPageManagement,
+            new CodeFixReplacementDefaults(
+                DefaultVariableDeclaration,
+                new Dictionary<string, string>
+                {
+                    [PageRunMethodKey] = PageRunMethodKey,
+                    [PageRunModalMethodKey] = PageRunModalMethodKey,
+                    [PageRunAtFieldMethodKey] = PageRunAtFieldMethodKey,
+                }),
+            NamingPatternTarget.LocalVariable,
+            reservedNames);
+
+        return CodeFixReplacementPropertyBag.Create(replacement);
     }
 
     private static bool IsReturnValueUsedSyntax(IInvocationExpression invocation)

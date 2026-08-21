@@ -99,6 +99,13 @@
       },
       "uniqueItems": true,
       "description": "Additional acronyms whose canonical casing is used when generating identifier fragments from all-lowercase source words. Original casing wins for the preferred name: if the source word already contains any uppercase character, its casing is preserved and the CodeFix always suggests that spelling. Only all-lowercase source words fall back to the registry, resolving e.g. 'vat' -> 'VAT', 'odata' -> 'OData', 'acme' -> 'Acme'. When the source word already carries uppercase and an entry with a different casing on the same case-insensitive key is registered here (e.g. source 'LCY' + entry 'Lcy'), that entry is additionally accepted alongside the original spelling; the CodeFix continues to suggest the original casing. Entries are matched case-insensitively. Merged with the built-in default list; user entries override built-ins on identical case-insensitive keys. If multiple entries resolve to the same case-insensitive key, exactly one canonical form is kept and the last entry wins."
+    },
+    "CodeFixOverrides": {
+      "type": "object",
+      "description": "Optional replacement overrides per diagnostic ID. Used by AC0005 and AC0006 today; designed for future CodeFix rules that replace helper objects or method calls. Each entry key is a diagnostic ID (for example 'AC0006').",
+      "additionalProperties": {
+        "$ref": "#/$defs/CodeFixOverride"
+      }
     }
   },
   "$defs": {
@@ -137,6 +144,24 @@
         "Name": {
           "type": "string",
           "description": "A name of the allowed character (i.e. 'dot', 'exclamation mark')."
+        }
+      }
+    },
+    "CodeFixOverride": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Replacement override for one diagnostic ID.",
+      "properties": {
+        "Variable": {
+          "type": "string",
+          "description": "Optional variable declaration used by the CodeFix replacement target. Accepted forms: '<Name>: <Type> <Subtype>;' and '<Type> <Subtype>;'. Examples: 'myPageMgt: Codeunit \"My Page Mgt\";' or 'Codeunit \"My Page Mgt\";'."
+        },
+        "Methods": {
+          "type": "object",
+          "description": "Optional map of method-name replacements where key is the built-in/default method token and value is the target method name.",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       }
     }

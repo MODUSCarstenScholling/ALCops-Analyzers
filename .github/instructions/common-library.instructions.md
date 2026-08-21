@@ -71,8 +71,12 @@ Per-project analyzer configuration.
 
 | File | Purpose |
 |------|---------|
-| `ALCopsSettings.cs` | POCO with properties: `CognitiveComplexityThreshold` (default 15), `CyclomaticComplexityThreshold` (default 8), `MaintainabilityIndexThreshold` (default 20), `LanguagesToTranslate`, `NamingPatterns`, `SubscriberNamingPattern`, `UseSequentialGuidScope`, `ToolTipAllowedPunctuations`, `KnownAcronyms`. |
+| `ALCopsSettings.cs` | POCO with properties: `CognitiveComplexityThreshold` (default 15), `CyclomaticComplexityThreshold` (default 8), `MaintainabilityIndexThreshold` (default 20), `LanguagesToTranslate`, `NamingPatterns`, `SubscriberNamingPattern`, `UseSequentialGuidScope`, `ToolTipAllowedPunctuations`, `KnownAcronyms`, `CodeFixOverrides`. |
 | `ALCopsSettingsProvider.cs` | Static provider with `ConcurrentDictionary` cache keyed by directory path. Loads `alcops.json` using hierarchical lookup (see Settings System below). JSON parsing is case-insensitive, allows comments and trailing commas. Preferred API: `GetSettings(compilation.FileSystem)`. |
+| `NamingPatternConventions.cs` | Shared naming pattern resolver and identifier generator. Contains `NamingPatternTarget`, resolved pattern metadata (`ResolvedNamingPattern`), inheritance/default pattern resolution for `NamingPatterns`, and `CreatePatternCompliantIdentifier(...)` to derive valid identifiers from object/base names for analyzers and CodeFixes. |
+| `CodeFixOverride.cs` | Settings model for per-diagnostic replacement overrides. Supports optional `Variable` declaration string and optional `Methods` map. |
+| `CodeFixReplacementResolver.cs` | Central resolver used by CodeFixes to combine defaults with `CodeFixOverrides`, parse variable declarations (with optional variable-name prefix), apply naming pattern normalization/collision handling, and resolve method-name overrides. |
+| `CodeFixReplacementPropertyBag.cs` | Serializer/parser for replacement metadata passed from analyzer to CodeFix via `Diagnostic.Properties`. Keeps configuration-dependent resolution on the analyzer side so CodeFix tests can use the standard `MemoryFileSystem` pattern. |
 
 ### Constants.cs
 Three constants: `PermissionNodeXPath` (XPath for permission set XML), `Comment`, `Locked`, `MaxLength` (label property name strings matching the SDK's `LabelPropertyHelper`).

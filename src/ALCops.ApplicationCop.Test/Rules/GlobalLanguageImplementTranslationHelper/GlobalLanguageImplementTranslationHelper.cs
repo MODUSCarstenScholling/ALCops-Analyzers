@@ -1,10 +1,27 @@
 using ALCops.ApplicationCop.CodeFixes;
+using Microsoft.Dynamics.Nav.CodeAnalysis;
 using RoslynTestKit;
 
 namespace ALCops.ApplicationCop.Test
 {
     public class GlobalLanguageImplementTranslationHelper : NavCodeAnalysisBase
     {
+                private static readonly byte[] ConfiguredReplacementSettings =
+                        System.Text.Encoding.UTF8.GetBytes(
+                                """
+                                {
+                                    "CodeFixOverrides": {
+                                        "AC0005": {
+                                            "Variable": "Codeunit \"My Translation Helper\";",
+                                            "Methods": {
+                                                "SetGlobalLanguageById": "SetLanguageById",
+                                                "SetGlobalLanguageToDefault": "SetDefaultLanguage"
+                                            }
+                                        }
+                                    }
+                                }
+                                """);
+
         private AnalyzerTestFixture _fixture;
         private static readonly Analyzers.BuiltInMethodImplementThroughCodeunit _analyzer = new();
         private string _testCasePath;
@@ -63,7 +80,30 @@ namespace ALCops.ApplicationCop.Test
                     AdditionalAnalyzers = [_analyzer]
                 });
 
-            fixture.TestCodeFix(currentCode, expectedCode, DiagnosticDescriptors.NotBlankRequiredOnPrimaryKeyField);
+            fixture.TestCodeFix(currentCode, expectedCode, DiagnosticDescriptors.GlobalLanguageImplementTranslationHelper);
+        }
+
+        [Test]
+        [TestCase("GlobalLanguageConfiguredReplacement")]
+        public async Task HasFixWithConfiguredReplacement(string testCase)
+        {
+            var currentCode = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(HasFix), testCase, "current.al"))
+                .ConfigureAwait(false);
+
+            var expectedCode = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(HasFix), testCase, "expected.al"))
+                .ConfigureAwait(false);
+
+            var fixture = RoslynFixtureFactory.Create<GlobalLanguageImplementTranslationHelperCodeFixProvider>(
+                new CodeFixTestFixtureConfig
+                {
+                    AdditionalAnalyzers = [_analyzer],
+                    FileSystem = new MemoryFileSystem(new Dictionary<string, byte[]>
+                    {
+                        { "alcops.json", ConfiguredReplacementSettings }
+                    })
+                });
+
+            fixture.TestCodeFix(currentCode, expectedCode, DiagnosticDescriptors.GlobalLanguageImplementTranslationHelper);
         }
     }
 }

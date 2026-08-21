@@ -16,8 +16,6 @@ public sealed class NamingPattern : DiagnosticAnalyzer
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics { get; } =
         ImmutableArray.Create(DiagnosticDescriptors.NamingPattern);
 
-    private static readonly TimeSpan RegexTimeout = TimeSpan.FromSeconds(2);
-
     public override void Initialize(AnalysisContext context) =>
         context.RegisterCompilationStartAction(CompilationStart);
 
@@ -442,39 +440,6 @@ public sealed class NamingPattern : DiagnosticAnalyzer
 
     internal sealed class NamingPatternConfig
     {
-        private static readonly (string? Allow, string? Disallow, string? AllowDesc, string? DisallowDesc) pascalCase = (@"^[A-Z]", null, "should start with an uppercase letter", null);
-        private static readonly (string? Allow, string? Disallow, string? AllowDesc, string? DisallowDesc) pascalCaseUnderscoreNoSpecial = (@"^(?:[A-Za-z]$|[A-Z]|_[A-Z]|x[A-Z])", @"[%&!?]", "should start with an uppercase letter, underscore followed by uppercase, or x followed by uppercase for xRec pattern (single-letter names are exempt)", "should not contain special characters (%, &, !, ?)");
-        private static readonly (string? Allow, string? Disallow, string? AllowDesc, string? DisallowDesc) pascalCaseUnderscore = (@"^(?:[A-Za-z]$|[A-Z]|_[A-Z]|x[A-Z])", null, "should start with an uppercase letter, underscore followed by uppercase, or x followed by uppercase for xRec pattern (single-letter names are exempt)", null);
-        private static readonly (string? Allow, string? Disallow, string? AllowDesc, string? DisallowDesc) anyCaseNoSpecial = (@"^[A-Za-z]", @"[%&!?]", "should start with a letter", "should not contain special characters (%, &, !, ?)");
-
-        private static readonly Dictionary<NamingTarget, (string? Allow, string? Disallow, string? AllowDesc, string? DisallowDesc)> BuiltInDefaults = new()
-        {
-            [NamingTarget.Procedure] = pascalCase,
-            [NamingTarget.Variable] =  pascalCaseUnderscoreNoSpecial,
-            [NamingTarget.LocalVariable] = pascalCaseUnderscoreNoSpecial,
-            [NamingTarget.GlobalVariable] = pascalCaseUnderscoreNoSpecial,
-            [NamingTarget.Parameter] = pascalCaseUnderscore,
-            [NamingTarget.VarParameter] = pascalCaseUnderscore,
-            [NamingTarget.ReturnValue] = pascalCase,
-            [NamingTarget.Object] = pascalCase,
-            [NamingTarget.Field] = anyCaseNoSpecial,
-            [NamingTarget.Action] = pascalCase,
-            [NamingTarget.Control] = pascalCase,
-        };
-
-        private static readonly Dictionary<NamingTarget, NamingTarget> InheritanceMap = new()
-        {
-            [NamingTarget.LocalProcedure] = NamingTarget.Procedure,
-            [NamingTarget.GlobalProcedure] = NamingTarget.Procedure,
-            [NamingTarget.EventSubscriber] = NamingTarget.Procedure,
-            [NamingTarget.EventDeclaration] = NamingTarget.Procedure,
-            [NamingTarget.LocalVariable] = NamingTarget.Variable,
-            [NamingTarget.GlobalVariable] = NamingTarget.Variable,
-            [NamingTarget.Parameter] = NamingTarget.LocalVariable,
-            [NamingTarget.VarParameter] = NamingTarget.Parameter,
-            [NamingTarget.ReturnValue] = NamingTarget.LocalVariable,
-        };
-
         private readonly Dictionary<NamingTarget, ResolvedPatterns> _resolvedPatterns;
 
         public NamingPatternConfig(Dictionary<string, NamingPatternSetting>? userOverrides)
@@ -483,101 +448,42 @@ public sealed class NamingPattern : DiagnosticAnalyzer
 
             foreach (NamingTarget target in System.Enum.GetValues(typeof(NamingTarget)))
             {
-                var resolved = ResolvePatternStrings(target, userOverrides);
+                var resolved = NamingPatternConventions.Resolve(MapTarget(target), userOverrides);
                 _resolvedPatterns[target] = new ResolvedPatterns(
-                    CompilePattern(resolved.Allow),
-                    CompilePattern(resolved.Disallow),
-                    resolved.Allow,
-                    resolved.Disallow,
-                    resolved.AllowDesc,
-                    resolved.DisallowDesc);
+                    resolved.AllowRegex,
+                    resolved.DisallowRegex,
+                    resolved.AllowPatternString,
+                    resolved.DisallowPatternString,
+                    resolved.AllowDescription,
+                    resolved.DisallowDescription);
             }
         }
 
         public ResolvedPatterns GetPatterns(NamingTarget target) =>
             _resolvedPatterns.TryGetValue(target, out var patterns) ? patterns : ResolvedPatterns.Empty;
 
-        private static (string? Allow, string? Disallow, string? AllowDesc, string? DisallowDesc) ResolvePatternStrings(
-            NamingTarget target, Dictionary<string, NamingPatternSetting>? userOverrides)
+        private static NamingPatternTarget MapTarget(NamingTarget target)
         {
-            // Build chain: target → parent → grandparent → ...
-            var chain = new List<NamingTarget>();
-            var current = target;
-
-            while (true)
+            return target switch
             {
-                chain.Add(current);
-
-                if (!InheritanceMap.TryGetValue(current, out var next))
-                 {
-                    break;
-                 }
-
-                current = next;
-            }
-
-            // Phase 1: first user override in the chain (specific wins over general).
-            if (userOverrides is not null)
-            {
-                foreach (var t in chain)
-                {
-                    if (TryGetUserOverride(userOverrides, t, out var s))
-                        return (
-                            !string.IsNullOrEmpty(s.AllowPattern) ? s.AllowPattern : null,
-                            !string.IsNullOrEmpty(s.DisallowPattern) ? s.DisallowPattern : null,
-                            !string.IsNullOrEmpty(s.AllowDescription) ? s.AllowDescription : null,
-                            !string.IsNullOrEmpty(s.DisallowDescription) ? s.DisallowDescription : null);
-                }
-            }
-
-            // Phase 2: first built-in default in the chain (specific wins over general).
-            // Parameter has its own entry and wins over LocalVariable → Variable.
-            foreach (var t in chain)
-            {
-                if (BuiltInDefaults.TryGetValue(t, out var builtIn))
-                {
-                    return builtIn;
-                }
-            }
-
-            return (null, null, null, null);
-        }
-
-        private static bool TryGetUserOverride(
-            Dictionary<string, NamingPatternSetting> overrides,
-            NamingTarget target,
-            out NamingPatternSetting setting)
-        {
-            var targetName = target.ToString();
-            foreach (var kvp in overrides)
-            {
-                if (SemanticFacts.IsSameName(kvp.Key, targetName))
-                {
-                    setting = kvp.Value;
-                    return true;
-                }
-            }
-
-            setting = default!;
-            return false;
-        }
-
-        private static Regex? CompilePattern(string? pattern)
-        {
-            if (string.IsNullOrWhiteSpace(pattern))
-                return null;
-
-            try
-            {
-                return new Regex(
-                    pattern.Trim(),
-                    RegexOptions.Compiled | RegexOptions.CultureInvariant,
-                    RegexTimeout);
-            }
-            catch (ArgumentException)
-            {
-                return null;
-            }
+                NamingTarget.Procedure => NamingPatternTarget.Procedure,
+                NamingTarget.LocalProcedure => NamingPatternTarget.LocalProcedure,
+                NamingTarget.GlobalProcedure => NamingPatternTarget.GlobalProcedure,
+                NamingTarget.EventSubscriber => NamingPatternTarget.EventSubscriber,
+                NamingTarget.EventDeclaration => NamingPatternTarget.EventDeclaration,
+                NamingTarget.Variable => NamingPatternTarget.Variable,
+                NamingTarget.LocalVariable => NamingPatternTarget.LocalVariable,
+                NamingTarget.GlobalVariable => NamingPatternTarget.GlobalVariable,
+                NamingTarget.Parameter => NamingPatternTarget.Parameter,
+                NamingTarget.VarParameter => NamingPatternTarget.VarParameter,
+                NamingTarget.ReturnValue => NamingPatternTarget.ReturnValue,
+                NamingTarget.Object => NamingPatternTarget.Object,
+                NamingTarget.Field => NamingPatternTarget.Field,
+                NamingTarget.Action => NamingPatternTarget.Action,
+                NamingTarget.EnumValue => NamingPatternTarget.EnumValue,
+                NamingTarget.Control => NamingPatternTarget.Control,
+                _ => NamingPatternTarget.Procedure
+            };
         }
     }
 

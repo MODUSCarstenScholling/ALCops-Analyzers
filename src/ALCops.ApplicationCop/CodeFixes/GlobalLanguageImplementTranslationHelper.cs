@@ -7,6 +7,7 @@ using Microsoft.Dynamics.Nav.CodeAnalysis.Workspaces;
 using Microsoft.Dynamics.Nav.CodeAnalysis.CodeActions.Mef;
 using ALCops.Common.Reflection;
 using ALCops.Common.Extensions;
+using ALCops.Common.Settings;
 using Microsoft.Dynamics.Nav.CodeAnalysis.Utilities;
 
 namespace ALCops.ApplicationCop.CodeFixes;
@@ -16,9 +17,41 @@ public sealed class GlobalLanguageImplementTranslationHelperCodeFixProvider : Co
 {
     private const int DefaultGlobalLanguageId = 1033;
     private const string TranslationHelperCodeunitName = "Translation Helper";
-    private const string DefaultVariableName = "TranslationHelper";
-    private const string SetGlobalLanguageByIdMethodName = "SetGlobalLanguageById";
-    private const string SetGlobalLanguageToDefaultMethodName = "SetGlobalLanguageToDefault";
+    private const string SetGlobalLanguageByIdMethodKey = "SetGlobalLanguageById";
+    private const string SetGlobalLanguageToDefaultMethodKey = "SetGlobalLanguageToDefault";
+
+#if NETSTANDARD2_1
+    private sealed class CodeFixProperties
+    {
+        public CodeFixReplacementResolution Replacement { get; }
+
+        private CodeFixProperties(CodeFixReplacementResolution replacement)
+        {
+            Replacement = replacement;
+        }
+
+        public static CodeFixProperties? TryParse(ImmutableDictionary<string, string>? properties)
+        {
+            if (!CodeFixReplacementPropertyBag.TryParse(properties, out var replacement) || replacement is null)
+                return null;
+
+            return new CodeFixProperties(replacement);
+        }
+    }
+#endif
+
+#if NET8_0_OR_GREATER
+    private sealed record CodeFixProperties(CodeFixReplacementResolution Replacement)
+    {
+        public static CodeFixProperties? TryParse(ImmutableDictionary<string, string>? properties)
+        {
+            if (!CodeFixReplacementPropertyBag.TryParse(properties, out var replacement) || replacement is null)
+                return null;
+
+            return new CodeFixProperties(replacement);
+        }
+    }
+#endif
 
     private class GlobalLanguageImplementTranslationHelperCodeAction : CodeAction.DocumentChangeAction
     {
@@ -54,20 +87,25 @@ public sealed class GlobalLanguageImplementTranslationHelperCodeFixProvider : Co
     private static void RegisterInstanceCodeFix(CodeFixContext ctx, SyntaxNode syntaxRoot, TextSpan span, Document document)
     {
         SyntaxNode node = syntaxRoot.FindNode(span);
-        ctx.RegisterCodeFix(CreateCodeAction(node, document, generateFixAll: false), ctx.Diagnostics[0]);
+        var properties = CodeFixProperties.TryParse(ctx.Diagnostics[0].Properties);
+        if (properties is null)
+            return;
+
+        ctx.RegisterCodeFix(CreateCodeAction(node, document, properties, generateFixAll: false), ctx.Diagnostics[0]);
     }
 
     private static GlobalLanguageImplementTranslationHelperCodeAction CreateCodeAction(SyntaxNode node, Document document,
+        CodeFixProperties properties,
         bool generateFixAll)
     {
         return new GlobalLanguageImplementTranslationHelperCodeAction(
             ApplicationCopAnalyzers.GlobalLanguageImplementTranslationHelperCodeAction,
-            ct => ImplementTranslationHelperCodeAction(document, node, ct),
+            ct => ImplementTranslationHelperCodeAction(document, node, properties, ct),
             nameof(GlobalLanguageImplementTranslationHelperCodeFixProvider),
             generateFixAll);
     }
 
-    private static async Task<Document> ImplementTranslationHelperCodeAction(Document document, SyntaxNode node, CancellationToken cancellationToken)
+    private static async Task<Document> ImplementTranslationHelperCodeAction(Document document, SyntaxNode node, CodeFixProperties properties, CancellationToken cancellationToken)
     {
         Task<SyntaxNode> syntaxRootTask = document.GetSyntaxRootAsync(cancellationToken);
 
@@ -79,16 +117,25 @@ public sealed class GlobalLanguageImplementTranslationHelperCodeFixProvider : Co
         // For assignment we want to replace the whole statement; for invocation we replace the invocation expression.
         SyntaxNode anchorNode = (SyntaxNode?)originalAssignment ?? originalInvocation!;
 
-        var containingMethodOrTrigger = GetContainingMethodOrTrigger(anchorNode);
+        var containingMethodOrTrigger = ConfiguredCodeunitReplacementCodeFixHelper.GetContainingMethodOrTrigger(anchorNode);
         if (containingMethodOrTrigger is null)
             return document;
 
-        var containingObject = GetContainingApplicationObject(containingMethodOrTrigger);
+        var containingObject = ConfiguredCodeunitReplacementCodeFixHelper.GetContainingApplicationObject(containingMethodOrTrigger);
         if (containingObject is null)
             return document;
 
-        var existingVariableName = FindExistingTranslationHelperVariable(containingMethodOrTrigger, containingObject);
-        var variableName = existingVariableName ?? DefaultVariableName;
+        var replacement = properties.Replacement;
+
+        var existingVariableName = ConfiguredCodeunitReplacementCodeFixHelper.FindExistingCodeunitVariable(
+            containingMethodOrTrigger,
+            containingObject,
+            replacement.VariableSubtypeName);
+
+        var variableName = existingVariableName ?? replacement.VariableName;
+
+        if (string.IsNullOrWhiteSpace(variableName))
+            return document;
 
         // Track nodes across edits so we always operate on nodes from the current tree
         var root = await syntaxRootTask.ConfigureAwait(false);
@@ -116,6 +163,7 @@ public sealed class GlobalLanguageImplementTranslationHelperCodeFixProvider : Co
                     var replacementInvocation =
                         CreateSetGlobalLanguageInvocation(
                                 variableName,
+                                replacement,
                                 currentInvocation.ArgumentList,
                                 firstArgExpr)
                             .WithLeadingTrivia(currentInvocation.GetLeadingTrivia())
@@ -134,6 +182,7 @@ public sealed class GlobalLanguageImplementTranslationHelperCodeFixProvider : Co
                     var invocation =
                         CreateSetGlobalLanguageInvocation(
                             variableName,
+                            replacement,
                             argumentList,
                             currentAssignment.Source);
 
@@ -155,153 +204,30 @@ public sealed class GlobalLanguageImplementTranslationHelperCodeFixProvider : Co
         {
             var updatedMethodOrTrigger = newRoot.GetCurrentNode(containingMethodOrTrigger);
             if (updatedMethodOrTrigger is not null)
-                newRoot = AddLocalVariable(newRoot, updatedMethodOrTrigger, variableName);
+                newRoot = ConfiguredCodeunitReplacementCodeFixHelper.AddLocalVariable(newRoot, updatedMethodOrTrigger, variableName, replacement.VariableSubtypeName);
         }
 
         return document.WithSyntaxRoot(newRoot);
     }
 
-    #region Object Helpers
-
-    private static MethodOrTriggerDeclarationSyntax? GetContainingMethodOrTrigger(SyntaxNode node)
-    {
-        var current = node.Parent;
-        while (current is not null)
-        {
-            if (current is MethodOrTriggerDeclarationSyntax methodOrTrigger)
-                return methodOrTrigger;
-            current = current.Parent;
-        }
-        return null;
-    }
-
-    private static ApplicationObjectSyntax? GetContainingApplicationObject(SyntaxNode node)
-    {
-        var current = node.Parent;
-        while (current is not null)
-        {
-            if (current is ApplicationObjectSyntax applicationObject)
-                return applicationObject;
-            current = current.Parent;
-        }
-        return null;
-    }
-
-    #endregion
-
     #region Variable Helpers
-
-    private static string? FindExistingTranslationHelperVariable(MethodOrTriggerDeclarationSyntax methodOrTrigger, ApplicationObjectSyntax containingObject)
-    {
-        var localVarName = FindTranslationHelperVariableInVarSection(methodOrTrigger.Variables);
-        if (localVarName is not null)
-            return localVarName;
-
-        var globalVarName = FindTranslationHelperVariableInMembers(containingObject.Members);
-        return globalVarName;
-    }
-
-    private static string? FindTranslationHelperVariableInVarSection(VarSectionBaseSyntax? varSection)
-    {
-        if (varSection is null)
-            return null;
-
-        foreach (var variable in varSection.Variables)
-        {
-            if (IsTranslationHelperCodeunitVariable(variable))
-            {
-                return variable.GetIdentifierNameSyntax().Identifier.ValueText?.UnquoteIdentifier();
-            }
-        }
-        return null;
-    }
-
-    private static string? FindTranslationHelperVariableInMembers(SyntaxList<MemberSyntax> members)
-    {
-        foreach (var member in members)
-        {
-            if (member is GlobalVarSectionSyntax globalVarSection)
-            {
-                foreach (var variable in globalVarSection.Variables)
-                {
-                    if (IsTranslationHelperCodeunitVariable(variable))
-                    {
-                        return variable.GetIdentifierNameSyntax().Identifier.ValueText?.UnquoteIdentifier();
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
-    private static bool IsTranslationHelperCodeunitVariable(VariableDeclarationBaseSyntax variable)
-    {
-        if (variable.Type is not TypeReferenceBaseSyntax typeReference)
-            return false;
-
-        if (typeReference.DataType.TypeName.Kind != EnumProvider.SyntaxKind.CodeunitKeyword)
-            return false;
-
-        // Check if matches "Translation Helper"
-        return GetSubtypeName(typeReference.DataType).IsSameName(TranslationHelperCodeunitName);
-    }
-
-    private static string? GetSubtypeName(DataTypeSyntax dataType)
-    {
-        if (dataType is not SubtypedDataTypeSyntax dataTypeWithSubtype)
-            return null;
-
-        if (dataTypeWithSubtype.Subtype is ObjectNameOrIdSyntax objectNameOrId)
-        {
-            if (objectNameOrId.Identifier is IdentifierNameSyntax IdentifierName)
-            {
-                return IdentifierName.Identifier.ValueText?.UnquoteIdentifier();
-            }
-        }
-
-        return dataTypeWithSubtype.Subtype.Identifier?.ToString().UnquoteIdentifier();
-    }
-
-    private static SyntaxNode AddLocalVariable(SyntaxNode root, MethodOrTriggerDeclarationSyntax methodOrTrigger, string variableName)
-    {
-        var variableDeclaration = CreateTranslationHelperVariableDeclaration(variableName);
-
-        if (methodOrTrigger.Variables is VarSectionSyntax existingVarSection)
-        {
-            var newVariables = existingVarSection.Variables.Add(variableDeclaration);
-            var newVarSection2 = existingVarSection.WithVariables(newVariables);
-            return root.ReplaceNode(existingVarSection, newVarSection2);
-        }
-
-        var newVarSection = SyntaxFactory.VarSection(
-            SyntaxFactory.Token(EnumProvider.SyntaxKind.VarKeyword),
-            new SyntaxList<VariableDeclarationBaseSyntax>().Add(variableDeclaration));
-
-        // The generic MethodOrTriggerDeclarationSyntax class doesn't have WithVariables method, so we need the concrete types
-        var newMethodOrTrigger =
-            methodOrTrigger switch
-            {
-                MethodDeclarationSyntax method => method.WithVariables(newVarSection),
-                TriggerDeclarationSyntax trigger => trigger.WithVariables(newVarSection),
-                _ => methodOrTrigger
-            };
-
-        return root.ReplaceNode(methodOrTrigger, newMethodOrTrigger);
-    }
-
     #endregion
 
     #region Invocation Helpers
 
-    private static InvocationExpressionSyntax CreateSetGlobalLanguageInvocation(string variableName, ArgumentListSyntax args, CodeExpressionSyntax? singleValueExpressionFor1033Check = null)
+    private static InvocationExpressionSyntax CreateSetGlobalLanguageInvocation(
+        string variableName,
+        CodeFixReplacementResolution replacement,
+        ArgumentListSyntax args,
+        CodeExpressionSyntax? singleValueExpressionFor1033Check = null)
     {
         if (singleValueExpressionFor1033Check is not null &&
             IsLiteralIntValue(singleValueExpressionFor1033Check, DefaultGlobalLanguageId))
         {
-            return CreateSetGlobalLanguageToDefaultInvocation(variableName);
+            return CreateSetGlobalLanguageToDefaultInvocation(variableName, replacement);
         }
 
-        return CreateSetGlobalLanguageByIdInvocation(variableName, args);
+        return CreateSetGlobalLanguageByIdInvocation(variableName, replacement, args);
     }
 
     private static bool IsLiteralIntValue(CodeExpressionSyntax codeExpression, int expected)
@@ -316,50 +242,37 @@ public sealed class GlobalLanguageImplementTranslationHelperCodeFixProvider : Co
                value == expected;
     }
 
-    private static InvocationExpressionSyntax CreateSetGlobalLanguageToDefaultInvocation(string variableName)
+    private static InvocationExpressionSyntax CreateSetGlobalLanguageToDefaultInvocation(
+        string variableName,
+        CodeFixReplacementResolution replacement)
     {
+        var methodName = replacement.GetMethodOrDefault(
+            SetGlobalLanguageToDefaultMethodKey,
+            SetGlobalLanguageToDefaultMethodKey);
+
         var memberAccess = SyntaxFactory.MemberAccessExpression(
             SyntaxFactory.IdentifierName(variableName),
             SyntaxFactory.Token(EnumProvider.SyntaxKind.DotToken),
-            SyntaxFactory.IdentifierName(SetGlobalLanguageToDefaultMethodName));
+            SyntaxFactory.IdentifierName(methodName));
 
         return SyntaxFactory.InvocationExpression(memberAccess, SyntaxFactory.ArgumentList());
     }
 
-    private static InvocationExpressionSyntax CreateSetGlobalLanguageByIdInvocation(string variableName, ArgumentListSyntax originalArguments)
+    private static InvocationExpressionSyntax CreateSetGlobalLanguageByIdInvocation(
+        string variableName,
+        CodeFixReplacementResolution replacement,
+        ArgumentListSyntax originalArguments)
     {
+        var methodName = replacement.GetMethodOrDefault(
+            SetGlobalLanguageByIdMethodKey,
+            SetGlobalLanguageByIdMethodKey);
+
         var memberAccess = SyntaxFactory.MemberAccessExpression(
             SyntaxFactory.IdentifierName(variableName),
             SyntaxFactory.Token(EnumProvider.SyntaxKind.DotToken),
-            SyntaxFactory.IdentifierName(SetGlobalLanguageByIdMethodName));
+            SyntaxFactory.IdentifierName(methodName));
 
         return SyntaxFactory.InvocationExpression(memberAccess, originalArguments);
     }
-
-    private static VariableDeclarationSyntax CreateTranslationHelperVariableDeclaration(string variableName)
-    {
-        return SyntaxFactory.VariableDeclaration(
-            default, // empty SyntaxList<MemberAttributeSyntax>
-            SyntaxFactory.IdentifierName(SyntaxFactory.Identifier(variableName)),
-            SyntaxFactory.Token(EnumProvider.SyntaxKind.ColonToken),
-            CreateCodeunitTypeReference(TranslationHelperCodeunitName),
-            SyntaxFactory.Token(EnumProvider.SyntaxKind.SemicolonToken));
-    }
-
-    private static SimpleTypeReferenceSyntax CreateCodeunitTypeReference(string codeunitName)
-    {
-        var codeunitObjectNameOrId =
-            SyntaxFactory.ObjectNameOrId(
-                SyntaxFactory.IdentifierName(
-                    SyntaxFactory.Identifier(codeunitName)));
-
-        var codeunitDataType =
-            SyntaxFactory.SubtypedDataType(
-                SyntaxFactory.ParseKeyword("Codeunit"),
-                codeunitObjectNameOrId);
-
-        return SyntaxFactory.SimpleTypeReference(codeunitDataType);
-    }
-
     #endregion
 }
