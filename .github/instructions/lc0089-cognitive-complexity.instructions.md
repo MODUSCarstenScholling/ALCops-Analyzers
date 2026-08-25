@@ -14,7 +14,7 @@ LC0089 reports cognitive-complexity metrics, LC0089i reports individual incremen
 |----------|-------|
 | IDs | LC0089, LC0089i, LC0090 |
 | Category | Design |
-| Severity | Hidden (LC0089/LC0089i), Warning (LC0090) |
+| Severity | Info (LC0089/LC0089i), Warning (LC0090) |
 | Enabled | LC0089/LC0089i: No; LC0090: Yes |
 | CodeFix | No |
 
