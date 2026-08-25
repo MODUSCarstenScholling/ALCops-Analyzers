@@ -55,12 +55,6 @@ Higher-level utilities that wrap SDK functionality.
 | `IdentifierCaseStyle.cs` | Enum consumed by `IdentifierNameRenderer`: `Pascal`, `Camel`, `Snake`, `Kebab`. |
 | `AcronymRenderMode.cs` | Enum consumed by `IdentifierNameRenderer`: `Preserve` (keep canonical acronym casing) vs `Normalize` (apply C# first-upper/rest-lower to every word). |
 
-### Shared classifications/
-
-| File | Purpose |
-|------|---------|
-| `FlowTerminatingBuiltIns.cs` | Shared case-insensitive classification of AL built-ins that never return control (`Error`, `FieldError`). `IsFlowTerminatingCall(IMethodSymbol?)` also requires `MethodKind.BuiltInMethod`, preventing user-defined names from matching. Used by PC0038, FC0007, and LC0089/LC0090. |
-
 ### Reflection/
 Runtime access to internal/version-dependent SDK types. This is the most sensitive area of Common.
 
@@ -83,6 +77,9 @@ Per-project analyzer configuration.
 
 ### Constants.cs
 Three constants: `PermissionNodeXPath` (XPath for permission set XML), `Comment`, `Locked`, `MaxLength` (label property name strings matching the SDK's `LabelPropertyHelper`).
+
+### FlowTerminatingBuiltIns.cs
+Single source of truth for AL built-ins that never return control (`Error`, `FieldError`, case-insensitive). One public rule, `IsFlowTerminatingCall(IOperation?)`: the invocation's target must carry a terminator name **and** either bind cleanly to the built-in (`MethodKind.BuiltInMethod`) or be an invalid call (`IOperation.IsInvalid`) whose synthesized target has a `Dialog`, `Record` or `FieldRef` receiver (`IMethodSymbol.ContainingSymbol`). The second branch covers `Binder.CreateBadCall`, which synthesizes an `ErrorMethodSymbol` with `MethodKind.Method` while arguments do not bind (undefined variable, wrong arity, mid-edit) — without it PC0038/FC0007/LC0089 flicker while typing. User-defined and referenced-app procedures named `Error` never match, because their receiver is a `Codeunit`/`Table`/`Page`/… type. `DeclaringSyntaxReference is null` is deliberately **not** used to detect built-ins: procedures from referenced apps are `ReferenceMethodSymbol` and have none either. Used by PC0038, FC0007, and LC0089/LC0090.
 
 ## Why Reflection Is Used Everywhere
 

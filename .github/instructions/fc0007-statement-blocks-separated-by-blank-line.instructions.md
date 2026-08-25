@@ -49,7 +49,7 @@ Settings type: [src/ALCops.Common/Settings/StatementBlockSpacingSettings.cs](src
 | Use sibling `StatementSyntax` nodes from the parent | The rule is about statement sequencing in the same statement list and must also work in contexts not represented by `BlockSyntax` (for example `repeat`). |
 | Give each statement gap one configuration-aware diagnostic owner | Avoids duplicate diagnostics before scope-leavers while preserving diagnostics next to one-liners or when `ControlFlowBefore` is disabled. An adjacent block owns its "before" gap only when that check actually runs. |
 | Skip one-liners unless `OneLinerMode = All` | One-liner control-flow statements (`if X then Y`) rarely benefit from surrounding blank lines. |
-| Detect `Error(...)` and `FieldError(...)` through `FlowTerminatingBuiltIns` | The shared classifier uses `MethodKind.BuiltInMethod` and case-insensitive names, distinguishing built-ins from user-defined procedures while preventing PC0038/FC0007/LC0089/LC0090 drift. |
+| Detect `Error(...)` and `FieldError(...)` through `FlowTerminatingBuiltIns` | The shared `IsFlowTerminatingCall(IOperation?)` classifier accepts a clean bind (`MethodKind.BuiltInMethod`) or an invalid call on a `Dialog`/`Record`/`FieldRef` receiver (arguments that fail to bind), keeping built-ins apart from user-defined and referenced-app procedures while preventing PC0038/FC0007/LC0089/LC0090 drift. |
 | `ElseChainBeforeMode` short-circuits when `else` shares its line with the previous token | Prevents false positives on `if X then Y else Z` one-liners. |
 
 ## Test coverage
@@ -74,6 +74,8 @@ Tests enable the rule via a physical `StatementBlocksSeparatedByBlankLine.rulese
 **HasDiagnosticWithControlFlowAfterOnly (2 cases):** ControlFlowAfterOnly, ControlFlowAfterAdjacentControlFlow.
 **HasDiagnosticWithMalformedJsonFallsBackToDefaults (1 case):** ExitOnly.
 **HasDiagnosticWithNullSettingsFallsBackToDefaults (1 case):** ExitOnly.
+**HasDiagnosticInDocumentWithErrors (1 case):** ErrorOnlyUnboundArgument.
+**NoDiagnosticInDocumentWithErrors (1 case):** ErrorOnlyUserDefinedUnboundArgument.
 **ExactDiagnosticCount (1 case):** ControlFlowInteractionSpacing.
 **SchemaParity (3 cases):** ScopeLeavingModeEnumMatchesSchema, ElseChainBeforeModeEnumMatchesSchema, OneLinerModeEnumMatchesSchema.
 

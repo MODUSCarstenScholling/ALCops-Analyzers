@@ -106,6 +106,29 @@ namespace ALCops.FormattingCop.Test
         }
 
         [Test]
+        // The unbound-argument regression fixtures reference a variable that is never declared
+        // (AL0118), so they cannot compile cleanly by design.
+        [TestCase("ErrorOnly", "ErrorOnlyUnboundArgument")]
+        public async Task HasDiagnosticInDocumentWithErrors(string? settingsKey, string fixtureName)
+        {
+            var code = await LoadFixtureAsync(fixtureName);
+
+            CreateFixture(settingsKey, tolerateErrors: true)
+                .HasDiagnosticAtAllMarkers(code, DiagnosticIds.StatementBlocksSeparatedByBlankLine);
+        }
+
+        [Test]
+        // A user-defined Error() procedure with unbound arguments must stay unrecognized.
+        [TestCase("ErrorOnly", "ErrorOnlyUserDefinedUnboundArgument")]
+        public async Task NoDiagnosticInDocumentWithErrors(string? settingsKey, string fixtureName)
+        {
+            var code = await LoadFixtureAsync(fixtureName);
+
+            CreateFixture(settingsKey, tolerateErrors: true)
+                .NoDiagnosticAtAllMarkers(code, DiagnosticIds.StatementBlocksSeparatedByBlankLine);
+        }
+
+        [Test]
         [TestCase("ControlFlowInteractionSpacing", 4)]
         public async Task ReportsExpectedDiagnosticCount(string fixtureName, int expectedCount)
         {
@@ -136,12 +159,14 @@ namespace ALCops.FormattingCop.Test
                 $"Fixture '{fixtureName}.al' not found in {nameof(HasDiagnostic)}/ or {nameof(NoDiagnostic)}/ under '{_testCasePath}'.");
         }
 
-        private AnalyzerTestFixture CreateFixture(string? settingsKey) =>
+        private AnalyzerTestFixture CreateFixture(string? settingsKey, bool tolerateErrors = false) =>
             RoslynFixtureFactory.Create<Analyzers.StatementBlocksSeparatedByBlankLine>(
                 new AnalyzerTestFixtureConfig
                 {
                     // Physical ruleset enables the disabled-by-default FC0007 rule.
                     RuleSetPath = _ruleSetPath,
+                    // Error-tolerant fixtures deliberately contain uncompilable code.
+                    ThrowsWhenInputDocumentContainsError = !tolerateErrors,
                     // Optional alcops.json injected via in-memory file system for config-driven cases.
                     FileSystem = settingsKey is null
                         ? null

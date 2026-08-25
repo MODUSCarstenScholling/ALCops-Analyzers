@@ -261,7 +261,9 @@ public sealed class NotAllCodePathsReturnValue : DiagnosticAnalyzer
         bool hasNamedReturn,
         string returnVariableName)
     {
-        if (IsFlowTerminatingCall(invocation))
+        // Built-in AL methods that never return control to the caller (they throw) terminate the
+        // path, preventing false positives on `if Cond then exit(x) else Error('...');`.
+        if (FlowTerminatingBuiltIns.IsFlowTerminatingCall(invocation))
         {
             return ImmutableHashSet<bool>.Empty;
         }
@@ -297,13 +299,6 @@ public sealed class NotAllCodePathsReturnValue : DiagnosticAnalyzer
 
         return false;
     }
-
-    // Built-in AL methods that never return control to the caller (they throw).
-    // Treating them as path terminators prevents PC0038 false positives on guard clauses
-    // such as `if Cond then exit(x) else Error('...');` or `... else Rec.FieldError(...);`.
-    private static bool IsFlowTerminatingCall(IInvocationExpression invocation) =>
-        invocation.TargetMethod is IMethodSymbol targetMethod &&
-        FlowTerminatingBuiltIns.IsFlowTerminatingCall(targetMethod);
 
     private static ImmutableHashSet<bool> AnalyzeStatements(
         IEnumerable<IOperation> statements,

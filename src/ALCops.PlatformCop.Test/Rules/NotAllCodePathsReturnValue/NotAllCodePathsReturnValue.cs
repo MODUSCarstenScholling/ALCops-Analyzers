@@ -5,12 +5,21 @@ namespace ALCops.PlatformCop.Test;
 public class NotAllCodePathsReturnValue : NavCodeAnalysisBase
 {
     private AnalyzerTestFixture _fixture;
+    private AnalyzerTestFixture _errorTolerantFixture;
     private string _testCasePath;
 
     [SetUp]
     public void Setup()
     {
         _fixture = RoslynFixtureFactory.Create<Analyzers.NotAllCodePathsReturnValue>();
+
+        // The unbound-argument regression fixtures reference variables and fields that are never
+        // declared (AL0118), so they cannot compile cleanly by design.
+        _errorTolerantFixture = RoslynFixtureFactory.Create<Analyzers.NotAllCodePathsReturnValue>(
+            new AnalyzerTestFixtureConfig
+            {
+                ThrowsWhenInputDocumentContainsError = false
+            });
 
         _testCasePath = Path.Combine(
             Directory.GetParent(
@@ -66,5 +75,26 @@ public class NotAllCodePathsReturnValue : NavCodeAnalysisBase
             .ConfigureAwait(false);
 
         _fixture.NoDiagnosticAtAllMarkers(code, DiagnosticIds.NotAllCodePathsReturnValue);
+    }
+
+    [Test]
+    [TestCase("UnnamedIfElseErrorUnboundArgumentTerminates")]
+    [TestCase("UnnamedIfElseFieldErrorUnboundArgumentTerminates")]
+    public async Task NoDiagnosticInDocumentWithErrors(string testCase)
+    {
+        var code = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(NoDiagnostic), $"{testCase}.al"))
+            .ConfigureAwait(false);
+
+        _errorTolerantFixture.NoDiagnosticAtAllMarkers(code, DiagnosticIds.NotAllCodePathsReturnValue);
+    }
+
+    [Test]
+    [TestCase("UnnamedUserDefinedErrorUnboundArgumentNotTerminating")]
+    public async Task HasDiagnosticInDocumentWithErrors(string testCase)
+    {
+        var code = await File.ReadAllTextAsync(Path.Combine(_testCasePath, nameof(HasDiagnostic), $"{testCase}.al"))
+            .ConfigureAwait(false);
+
+        _errorTolerantFixture.HasDiagnosticAtAllMarkers(code, DiagnosticIds.NotAllCodePathsReturnValue);
     }
 }

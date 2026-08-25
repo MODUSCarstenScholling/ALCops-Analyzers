@@ -260,18 +260,9 @@ public sealed class CognitiveComplexity : DiagnosticAnalyzer
         CancellationToken cancellationToken)
     {
         // if not <condition> then Error(...); / Rec.FieldError(...); / FldRef.FieldError;
-        //
-        // A clean bind yields the built-in method. When an argument fails to bind (undefined variable,
-        // wrong arity, mid-edit), Binder.CreateBadCall synthesizes an ErrorMethodSymbol for the
-        // two-overload built-ins Dialog.Error, Table.FieldError and FieldRef.FieldError. That symbol has
-        // MethodKind.Method, so FlowTerminatingBuiltIns.IsFlowTerminatingCall would reject it and the
-        // guard clause would flicker between +0 and +1 while typing. Both the real built-in and the
-        // synthesized symbol carry the callee name and no DeclaringSyntaxReference; only user-defined
-        // procedures have one (AL has no user overloads, so a user procedure with bad arguments still
-        // binds to its own symbol and is correctly demoted).
-        if (semanticModel.GetOperation(codeExpression, cancellationToken) is IInvocationExpression { TargetMethod: IMethodSymbol target } &&
-            FlowTerminatingBuiltIns.MethodNames.Contains(target.Name) &&
-            target.DeclaringSyntaxReference is null)
+        // Classification (including calls whose arguments fail to bind mid-edit) is delegated to
+        // FlowTerminatingBuiltIns.IsFlowTerminatingCall; see that type for the rationale.
+        if (FlowTerminatingBuiltIns.IsFlowTerminatingCall(semanticModel.GetOperation(codeExpression, cancellationToken)))
         {
             return true;
         }
