@@ -1,5 +1,4 @@
 using System.Collections.Immutable;
-using ALCops.Common.Reflection;
 using ALCops.Common.Extensions;
 using Microsoft.Dynamics.Nav.CodeAnalysis;
 using Microsoft.Dynamics.Nav.CodeAnalysis.CodeActions;

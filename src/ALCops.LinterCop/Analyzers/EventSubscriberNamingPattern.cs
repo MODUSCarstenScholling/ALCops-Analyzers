@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Text;
 using ALCops.Common.Extensions;
 using ALCops.Common.Helpers;
@@ -225,6 +225,7 @@ public sealed class EventSubscriberNamingPattern : DiagnosticAnalyzer
         private static readonly Dictionary<string, (TokenKind Kind, IdentifierCaseStyle Style)> KnownPlaceholders =
             new Dictionary<string, (TokenKind, IdentifierCaseStyle)>(StringComparer.Ordinal)
             {
+#pragma warning disable IDE0055 // Aligned lookup table; the formatter has no aligned-assignment option
                 ["{EventSource}"]  = (TokenKind.EventSource,  IdentifierCaseStyle.Pascal),
                 ["{eventSource}"]  = (TokenKind.EventSource,  IdentifierCaseStyle.Camel),
                 ["{event_source}"] = (TokenKind.EventSource,  IdentifierCaseStyle.Snake),
@@ -240,6 +241,7 @@ public sealed class EventSubscriberNamingPattern : DiagnosticAnalyzer
                 ["{element_name}"] = (TokenKind.ElementName,  IdentifierCaseStyle.Snake),
                 ["{element-name}"] = (TokenKind.ElementName,  IdentifierCaseStyle.Kebab),
                 ["{Element Name}"] = (TokenKind.ElementName,  IdentifierCaseStyle.Raw),
+#pragma warning restore IDE0055
             };
 
         public static IReadOnlyList<TemplateSegment> Parse(string template)

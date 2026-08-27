@@ -207,7 +207,23 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: ALCops.TestAutomationCop
-          path: ./src/ALCops.TestAutomationCop/bin/Release/          
+          path: ./src/ALCops.TestAutomationCop/bin/Release/
+
+      # Code style / formatting gate (warnings-only baseline: reports drift, does not fail the job yet).
+      # Runs after the cop builds: under ContinuousIntegrationBuild the test projects reference the cop DLLs
+      # by HintPath (bin/$(Configuration)/<tfm>/), so formatting before the build leaves 262 CS0246 errors and
+      # every test-project using cascades into a bogus IDE0005. dotnet format has no --configuration switch and
+      # defaults to Debug; the Configuration env var makes MSBuild resolve the Release DLLs built above.
+      - name: Restore solution
+        run: dotnet restore ALCops.sln
+        env:
+          Configuration: Release
+
+      - name: Verify code formatting
+        run: dotnet format ALCops.sln --verify-no-changes --no-restore --severity warn --exclude "**/Rules/**/*.al"
+        continue-on-error: true
+        env:
+          Configuration: Release
 
   test:
     if: ${{ !inputs.draft-check || github.event.pull_request.draft == false }}
@@ -402,7 +418,15 @@ jobs:
 
       - name: Merge Test Results
         if: always()
+        shell: bash
         run: |
+          # Every 'Run *.Test' step is continue-on-error, so this is the step that fails the job
+          # when tests never ran (e.g. BC DevTools download failed). Fail with a clear message
+          # instead of letting trx-merge crash on a missing directory.
+          if ! compgen -G "./TestResults/*.trx" > /dev/null; then
+            echo "::error::No .trx files found in ./TestResults - tests did not run. Check the 'Setup BC DevTools' and 'Run *.Test' steps above."
+            exit 1
+          fi
           trx-merge --dir ./TestResults/ --output ./TestResults_${{ matrix.version }}.trx
           
       - name: Upload Test Results

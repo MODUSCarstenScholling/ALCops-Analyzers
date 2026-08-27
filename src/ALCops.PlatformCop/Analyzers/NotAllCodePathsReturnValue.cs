@@ -20,7 +20,7 @@ public sealed class NotAllCodePathsReturnValue : DiagnosticAnalyzer
         context.RegisterSyntaxNodeAction(
             AnalyzeDeclaration,
             EnumProvider.SyntaxKind.MethodDeclaration);
-        // Can be extended to triggers in the future: EnumProvider.SyntaxKind.TriggerDeclaration
+    // Can be extended to triggers in the future: EnumProvider.SyntaxKind.TriggerDeclaration
 
     private static void AnalyzeDeclaration(SyntaxNodeAnalysisContext ctx)
     {
