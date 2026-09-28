@@ -61,5 +61,22 @@ namespace ALCops.PlatformCop.Test
 
             _fixture.NoDiagnosticAtAllMarkers(code, DiagnosticIds.DuplicateODataEntityName);
         }
+
+        [Test]
+        [TestCase("PageExtensionPrimaryKeyCandidates")]
+        [TestCase("PageExtensionSiblingExtensionCandidates")]
+        public async Task AnalyzerDoesNotThrowForComparisonCandidates(string testCase)
+        {
+            SkipTestIfVersionIsTooLow(
+                ["PageExtensionPrimaryKeyCandidates", "PageExtensionSiblingExtensionCandidates"],
+                testCase,
+                "13.0",
+                "No support for pageextensions when target itself is already declared in the same module");
+
+            var code = await File.ReadAllTextAsync(Path.Combine(_testCasePath, "NoException", $"{testCase}.al"))
+                .ConfigureAwait(false);
+
+            _fixture.NoException(code);
+        }
     }
 }

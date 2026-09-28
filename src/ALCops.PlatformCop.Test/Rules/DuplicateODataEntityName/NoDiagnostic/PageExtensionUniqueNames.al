@@ -41,3 +41,64 @@ table 50100 MyTable
         key(PK; "Primary Key") { }
     }
 }
+
+table 5703 Location
+{
+    fields
+    {
+        field(1; "Primary Key"; Integer) { }
+        field(2; "Cross-Dock Due Date Calc."; Integer) { }
+    }
+
+    keys
+    {
+        key(PK; "Primary Key") { }
+    }
+}
+
+page 5703 "Location Card"
+{
+    Caption = 'Location Card';
+    PageType = Card;
+    SourceTable = Location;
+
+    layout
+    {
+        area(content)
+        {
+            group(General)
+            {
+                Caption = 'General';
+
+				field("Cross-Dock Due Date Calc."; Rec."Cross-Dock Due Date Calc.")
+				{
+					ApplicationArea = All;
+				}
+			}
+		}
+	}
+}
+
+tableextension 70101 "M365 ETSC Location" extends Location
+{
+    fields
+    {
+        field(70101; "Is Special Location"; Boolean)
+        {
+        }
+    }
+}
+
+
+pageextension 70103 "M365 ETSC Location Card" extends "Location Card"
+{
+    layout
+    {
+        addafter("Cross-Dock Due Date Calc.")
+        {
+            field(IsSpecialLocation; Rec."Is Special Location")
+            {
+            }
+        }
+    }
+}

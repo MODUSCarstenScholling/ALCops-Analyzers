@@ -68,11 +68,11 @@ public sealed class DuplicateODataEntityName : DiagnosticAnalyzer
         if (targetPage is null || !RelevantPageTypes.Contains(targetPage.PageType))
             return;
 
-        var extensionControls = CollectFieldControlEntries(pageExtension.AddedControlsFlattened);
+        var extensionControls = CollectFieldControlEntries(pageExtension.AddedControlsFlattened, isReportable: true);
         if (extensionControls.Count == 0)
             return;
 
-        var baseControls = CollectFieldControlEntries(targetPage.FlattenedControls);
+        var baseControls = CollectFieldControlEntries(targetPage.FlattenedControls, isReportable: false);
         var siblingControls = CollectSiblingExtensionControls(ctx, pageExtension, targetPage);
 
         // Build set of PK fields already referenced by any control on the page
@@ -90,10 +90,16 @@ public sealed class DuplicateODataEntityName : DiagnosticAnalyzer
         allEntries.AddRange(siblingControls);
 
         // Only report diagnostics on the extension's own controls
-        var extensionControlSet = new HashSet<IControlSymbol>(
-            extensionControls.Where(e => e.Control is not null).Select(e => e.Control!));
+        var extensionControlSet = new HashSet<IControlSymbol>();
+        foreach (var entry in extensionControls)
+        {
+            if (entry.DiagnosticPayload is ODataDiagnosticPayload payload)
+            {
+                extensionControlSet.Add(payload.Control);
+            }
+        }
 
-        ReportDuplicates(ctx, allEntries, reportableFilter: entry => entry.Control is not null && extensionControlSet.Contains(entry.Control));
+        ReportDuplicates(ctx, allEntries, reportableFilter: control => extensionControlSet.Contains(control));
     }
 
     private static ImmutableArray<IPageExtensionBaseTypeSymbol> GetCachedPageExtensions(Compilation compilation)
@@ -120,11 +126,12 @@ public sealed class DuplicateODataEntityName : DiagnosticAnalyzer
                 if (control.ControlKind != EnumProvider.ControlKind.Field)
                     continue;
 
-                var odataName = ODataNameHelper.MangleIntoValidXmlIdentifier(control.Name);
+                var controlName = control.Name;
+                var odataName = ODataNameHelper.MangleIntoValidXmlIdentifier(controlName);
                 if (odataName is null)
                     continue;
 
-                entries.Add(new ODataNameEntry(odataName, control.Name, control.GetLocation(), null));
+                entries.Add(new ODataNameEntry(odataName));
             }
         }
 
@@ -153,7 +160,7 @@ public sealed class DuplicateODataEntityName : DiagnosticAnalyzer
         if (!RelevantPageTypes.Contains(page.PageType))
             return;
 
-        var controlEntries = CollectFieldControlEntries(page.FlattenedControls);
+        var controlEntries = CollectFieldControlEntries(page.FlattenedControls, isReportable: true);
         var referencedFields = CollectReferencedFields(page.FlattenedControls);
         var pkEntries = CollectPrimaryKeyEntries(page.RelatedTable, referencedFields);
 
@@ -161,13 +168,12 @@ public sealed class DuplicateODataEntityName : DiagnosticAnalyzer
         allEntries.AddRange(controlEntries);
         allEntries.AddRange(pkEntries);
 
-        // Only report on controls (not PK fields) - PK fields from external dependencies
-        // have locations that crash the AL Language Extension host when reported.
-        // PK entries still participate in duplicate detection.
-        ReportDuplicates(ctx, allEntries, reportableFilter: entry => entry.Control is not null);
+        ReportDuplicates(ctx, allEntries, reportableFilter: null);
     }
 
-    private static List<ODataNameEntry> CollectFieldControlEntries(ImmutableArray<IControlSymbol> controls)
+    private static List<ODataNameEntry> CollectFieldControlEntries(
+        ImmutableArray<IControlSymbol> controls,
+        bool isReportable)
     {
         var entries = new List<ODataNameEntry>();
         foreach (var control in controls)
@@ -175,11 +181,15 @@ public sealed class DuplicateODataEntityName : DiagnosticAnalyzer
             if (control.ControlKind != EnumProvider.ControlKind.Field)
                 continue;
 
-            var odataName = ODataNameHelper.MangleIntoValidXmlIdentifier(control.Name);
+            var controlName = control.Name;
+            var odataName = ODataNameHelper.MangleIntoValidXmlIdentifier(controlName);
             if (odataName is null)
                 continue;
 
-            entries.Add(new ODataNameEntry(odataName, control.Name, control.GetLocation(), control));
+            if (isReportable)
+                entries.Add(new ODataNameEntry(odataName, controlName, control.GetLocation(), control));
+            else
+                entries.Add(new ODataNameEntry(odataName));
         }
         return entries;
     }
@@ -195,11 +205,12 @@ public sealed class DuplicateODataEntityName : DiagnosticAnalyzer
             if (field.OriginalDefinition is IFieldSymbol fieldDef && referencedFields.Contains(fieldDef))
                 continue;
 
-            var odataName = ODataNameHelper.MangleIntoValidXmlIdentifier(field.Name);
+            var fieldName = field.Name;
+            var odataName = ODataNameHelper.MangleIntoValidXmlIdentifier(fieldName);
             if (odataName is null)
                 continue;
 
-            entries.Add(new ODataNameEntry(odataName, field.Name, field.GetLocation(), null));
+            entries.Add(new ODataNameEntry(odataName));
         }
         return entries;
     }
@@ -248,7 +259,7 @@ public sealed class DuplicateODataEntityName : DiagnosticAnalyzer
     private static void ReportDuplicates(
         SymbolAnalysisContext ctx,
         List<ODataNameEntry> entries,
-        Func<ODataNameEntry, bool>? reportableFilter)
+        Func<IControlSymbol, bool>? reportableFilter)
     {
         var groups = entries
             .GroupBy(e => e.ODataName, SemanticFacts.NameEqualityComparer)
@@ -258,35 +269,68 @@ public sealed class DuplicateODataEntityName : DiagnosticAnalyzer
         {
             foreach (var entry in group)
             {
-                if (reportableFilter is not null && !reportableFilter(entry))
+                if (!entry.DiagnosticPayload.HasValue)
+                    continue;
+
+                var diagnosticPayload = entry.DiagnosticPayload.Value;
+                if (reportableFilter is not null && !reportableFilter(diagnosticPayload.Control))
                     continue;
 
                 ctx.ReportDiagnostic(Diagnostic.Create(
                     DiagnosticDescriptors.DuplicateODataEntityName,
-                    entry.Location,
-                    entry.OriginalName,
+                    diagnosticPayload.Location,
+                    diagnosticPayload.OriginalName,
                     group.Key));
             }
         }
     }
 
 #if NETSTANDARD2_1
-    private readonly struct ODataNameEntry
+    private readonly struct ODataDiagnosticPayload
     {
-        public string ODataName { get; }
         public string OriginalName { get; }
         public Location Location { get; }
-        public IControlSymbol? Control { get; }
+        public IControlSymbol Control { get; }
 
-        public ODataNameEntry(string odataName, string originalName, Location location, IControlSymbol? control)
+        public ODataDiagnosticPayload(string originalName, Location location, IControlSymbol control)
         {
-            ODataName = odataName;
             OriginalName = originalName;
             Location = location;
             Control = control;
         }
     }
+
+    private readonly struct ODataNameEntry
+    {
+        public string ODataName { get; }
+        public ODataDiagnosticPayload? DiagnosticPayload { get; }
+
+        public ODataNameEntry(string odataName)
+        {
+            ODataName = odataName;
+            DiagnosticPayload = null;
+        }
+
+        public ODataNameEntry(string odataName, string originalName, Location location, IControlSymbol control)
+        {
+            ODataName = odataName;
+            DiagnosticPayload = new ODataDiagnosticPayload(originalName, location, control);
+        }
+    }
 #else
-    private readonly record struct ODataNameEntry(string ODataName, string OriginalName, Location Location, IControlSymbol? Control);
+    private readonly record struct ODataDiagnosticPayload(string OriginalName, Location Location, IControlSymbol Control);
+
+    private readonly record struct ODataNameEntry(string ODataName, ODataDiagnosticPayload? DiagnosticPayload)
+    {
+        public ODataNameEntry(string odataName)
+            : this(odataName, null)
+        {
+        }
+
+        public ODataNameEntry(string odataName, string originalName, Location location, IControlSymbol control)
+            : this(odataName, new ODataDiagnosticPayload(originalName, location, control))
+        {
+        }
+    }
 #endif
 }

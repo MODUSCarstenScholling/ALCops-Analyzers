@@ -4,6 +4,7 @@ Recurring causes of false positives/negatives, mined from `fix(...)` commits. Wh
 
 | Cause | What to check | Precedent |
 |---|---|---|
+| **Metadata-only symbols in cross-module comparisons** | Use names for duplicate comparison, but only request source locations for declarations that can receive diagnostics; referenced-module symbols may have no source location. | PC0033 |
 | **Temporary tables come in three forms** | `TableType = Temporary` on the table, `Record X temporary` on variables/parameters/return values, and pages with a temporary `SourceTable`. Rules about DB access, permissions, or performance must treat all three alike. | PC0037 #379, AC0031/AC0032 #382, PC0035 #384 |
 | **`RecordRef` / `FieldRef` dynamic access** | A DB operation on a `RecordRef` can target any table → per-table reasoning is unsound for that object (bail out). `FieldRef.Value` / `FieldRef.Field` operate on the in-memory row and consume no permission → must *not* trigger table-level logic. | AC0032 #448, LC0083 #410 |
 | **AL scoping in name-keyed maps** | Locals, parameters, and named return values shadow object-scope variables of the same name. Consult the full local scope before object scope; classify by symbol type, never by variable name. | AC0032 #448 (audit tracked in #449) |

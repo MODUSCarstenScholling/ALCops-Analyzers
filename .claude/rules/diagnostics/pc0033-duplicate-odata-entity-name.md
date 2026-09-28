@@ -26,6 +26,7 @@ Registers `RegisterSymbolAction` on `Page` and `PageExtension`; main type `Dupli
 | Page types Card, Document, List, ListPart, ListPlus, Worksheet only | These support Edit in Excel / OData; API pages have their own naming rules (AL0528) and RoleCenter, ConfirmationDialog, NavigatePage etc. do not expose OData |
 | PageExtensions are analyzed against the base page and all sibling extensions, but diagnostics are reported only on extension-added controls | Extension fields participate in OData, yet the developer can only fix their own code |
 | Primary-key fields join the uniqueness check | EDMX docs: PK fields are auto-added as OData properties |
+| Comparison-only symbols carry only their transformed OData name | Base-page controls, sibling extension controls, and primary-key fields affect uniqueness but are never reported; symbols from referenced modules may not have source locations |
 | Case-insensitive comparison of OData names | OData property names are case-insensitive per the OData spec |
 | Name transformation delegated via reflection to the SDK's `NameTransformations.MangleIntoValidXmlIdentifier` (`ODataNameHelper` in ALCops.Common) rather than reimplemented | The transformation has many edge cases (underscore dedup, trailing trim, Subform→Line, `XmlConvert` encoding); the SDK method is what the platform runs |
 | When the SDK method is unavailable the analyzer exits early with no diagnostics | Older SDKs lack the method; silent degradation instead of errors |
