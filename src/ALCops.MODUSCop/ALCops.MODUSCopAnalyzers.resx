@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="MODUSCopActiveTitle" xml:space="preserve">
+    <value>MODUS Cop is active</value>
+  </data>
+  <data name="MODUSCopActiveMessageFormat" xml:space="preserve">
+    <value>MODUS Cop active.</value>
+  </data>
+  <data name="MODUSCopActiveDescription" xml:space="preserve">
+    <value>Reports that MODUS Cop is active at the id property of the app manifest.</value>
+  </data>
+  <data name="CompositeKeyTableRequiresFilterAndFindRecordTitle" xml:space="preserve">
+    <value>Composite-key tables require FilterRecord and FindRecord</value>
+  </data>
+  <data name="CompositeKeyTableRequiresFilterAndFindRecordMessageFormat" xml:space="preserve">
+    <value>Table '{0}' with multiple primary-key fields must implement FilterRecord() and FindRecord() procedures.</value>
+  </data>
+  <data name="CompositeKeyTableRequiresFilterAndFindRecordDescription" xml:space="preserve">
+    <value>Normal tables with a composite primary key must provide both FilterRecord and FindRecord procedures.</value>
+  </data>
+  <data name="SetupTableRequiresReadAndInitializeTitle" xml:space="preserve">
+    <value>Setup tables require Read and Initialize</value>
+  </data>
+  <data name="SetupTableRequiresReadAndInitializeMessageFormat" xml:space="preserve">
+    <value>Setup table '{0}' must implement Read() and Initialize() procedures.</value>
+  </data>
+  <data name="SetupTableRequiresReadAndInitializeDescription" xml:space="preserve">
+    <value>Tables matching the shared setup-table heuristic whose names contain Setup must provide both Read and Initialize procedures.</value>
+  </data>
+  <data name="IdentifierNameConflictsWithTypeNameTitle" xml:space="preserve">
+    <value>Identifier name conflicts with type name</value>
+  </data>
+  <data name="IdentifierNameConflictsWithTypeNameMessageFormat" xml:space="preserve">
+    <value>Identifier '{0}' conflicts with the type name '{1}'.</value>
+  </data>
+  <data name="IdentifierNameConflictsWithTypeNameDescription" xml:space="preserve">
+    <value>Global and local variable names must not conflict with the name of their declared data type.</value>
+  </data>
+  <data name="SetupTableAccessRequiresReadOrInitializeTitle" xml:space="preserve">
+    <value>Use Read or Initialize to access setup tables</value>
+  </data>
+  <data name="SetupTableAccessRequiresReadOrInitializeMessageFormat" xml:space="preserve">
+    <value>Use Read() or Initialize() to read setup table '{0}'.</value>
+  </data>
+  <data name="SetupTableAccessRequiresReadOrInitializeDescription" xml:space="preserve">
+    <value>Use a Read or Initialize procedure instead of Get, Find, FindFirst, FindLast, or FindSet when the setup table supplies either procedure. Access to the owning table within its own Read or Initialize procedure is exempt.</value>
+  </data>
+  <data name="PageExtensionActionPromotionTitle" xml:space="preserve">
+    <value>Do not promote actions in page extensions</value>
+  </data>
+  <data name="PageExtensionActionPromotionMessageFormat" xml:space="preserve">
+    <value>Action promotion is not allowed in page extensions.</value>
+  </data>
+  <data name="PageExtensionActionPromotionDescription" xml:space="preserve">
+    <value>Added page-extension actions must not declare Promoted, even when false, or use action references.</value>
+  </data>
+  <data name="PageExtensionActionPlacementTitle" xml:space="preserve">
+    <value>Use AddLast for page-extension actions</value>
+  </data>
+  <data name="PageExtensionActionPlacementMessageFormat" xml:space="preserve">
+    <value>AddFirst, AddBefore, AddAfter, MoveFirst, MoveLast, MoveBefore, and MoveAfter are not allowed for actions in page extensions. Use AddLast instead or omit the move.</value>
+  </data>
+  <data name="PageExtensionActionPlacementDescription" xml:space="preserve">
+    <value>Page-extension action additions must use AddLast and existing actions must not be moved. Control changes are unaffected.</value>
+  </data>
+  <data name="MandatoryAffixOnlyInExtensionObjectsTitle" xml:space="preserve">
+    <value>Use mandatory affixes only in extension objects</value>
+  </data>
+  <data name="MandatoryAffixOnlyInExtensionObjectsMessageFormat" xml:space="preserve">
+    <value>Affix '{0}' must only be used in extension objects.</value>
+  </data>
+  <data name="MandatoryAffixOnlyInExtensionObjectsDescription" xml:space="preserve">
+    <value>Names of members in non-extension objects must not contain the mandatory affixes configured in AppSourceCop.json.</value>
+  </data>
+</root>
